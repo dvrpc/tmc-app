@@ -5,3 +5,5 @@ tmc_env/
 flask_user_data/
 
 .env
+
+.DS_Store
