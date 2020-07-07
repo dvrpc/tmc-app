@@ -1,3 +1,5 @@
+flask
+flake8
 pandas
 geopandas
 xlrd
