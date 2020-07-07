@@ -1,0 +1,7 @@
+pandas
+geopandas
+xlrd
+xlsxwriter
+python-dotenv
+googlemaps
+git+https://github.com/dvrpc/tmc-summarizer.git
