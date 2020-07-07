@@ -1,6 +1,6 @@
 # tmc-app
 
-Flask app for the tmc_summarizer
+``Flask`` front end for the [``tmc_summarizer``](https://github.com/dvrpc/tmc-summarizer)
 
 ## Live Demo
 
