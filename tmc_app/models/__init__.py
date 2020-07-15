@@ -151,9 +151,40 @@ class Project(db.Model):
         return User.query.filter_by(id=self.created_by).first()
 
     def safe_folder_name(self):
+
+        no_dice = [
+            " ",
+            "'",
+            "`",
+            "~",
+            "!",
+            "@",
+            "#",
+            "$",
+            "%",
+            "^",
+            "&",
+            "*",
+            "(",
+            ")",
+            "[",
+            "]",
+            "{",
+            "}",
+            ";",
+            "=",
+            ",",
+            ".",
+            "/",
+            r"\",
+            "|",
+            "?",
+            "+",
+        ]
+
         folder = self.name
-        for bad_char in [" ", "'"]:
-            folder = folder.replace(bad_char, "-")
+        for char in no_dice:
+            folder = folder.replace(char, "-")
         return folder
 
 
