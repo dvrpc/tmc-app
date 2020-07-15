@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block navbar %}
+    <nav class="navbar navbar-expand-sm navbar-light" style="background-color: #de8cff;">
+      <a class="navbar-brand" href="/">TMC Summarizer</a>
+      <div class="navbar" id="navbarNavDropdown">
+        <ul class="navbar-nav">
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              My Projects
+            </a>
+            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+              <a class="dropdown-item" href="/rainbows">Ruben's Rainbows</a>
+              {% for project in current_user.projects_created() %}
+                  <a class="dropdown-item" href="/project/{{project.uid}}">{{project.name}}</a>
+                {% endfor %}
+            </div>
+          </li>
+        </ul>
+      </div>
+    </nav>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends "navbar_logged_in.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col p-4" style="{{ make_random_gradient() }}">
+            <h1>
+                {{ project.name }}
+            </h1>
+            <p>
+                {{ project.description }}
+            </p>
+        </div>
+    
+    </div>
+
+    <!-- Form to UPLOAD data -->
+    <div class="row mt-4">
+        <div class="col">
+
+            <h5>
+                Upload data:
+            </h5>
+
+            <form method="post" action="{{request.path}}/save" enctype="multipart/form-data">
+
+                {{form.csrf_token }}
+                <div class="custom-file">
+                    <input type="file" class="custom-file-input" id="files" name="files" multiple>
+                    <label class="custom-file-label" for="customFile">Select one or more files</label>
+                  </div>
+    
+                <button type="submit" class="btn btn-primary mt-2">Submit</button>
+              </form>
+        </div>
+
+        <div class="col">
+              <div class="text-center mt-4">
+                <button type="button" class="btn btn-success btn-bg">Summarize Raw Data (.xlsx)</button>
+                <br>
+                <button type="button" class="btn btn-secondary btn-bg mt-2">Explore Data</button>
+              </div>
+        </div>
+
+    </div>
+
+<!-- Flashed messages -->
+<div class="row mt-4">
+    <div class="col">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class=flashes>
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+          </div>
+        {% endfor %}
+        </div>
+      {% endif %}
+      {% endwith %}
+    </div>
+  </div>
+  
+    <!-- Table of all files -->
+    <div class="row mt-4">
+        <div class="col">
+            <h5>
+                Raw TMC Data
+            </h5>
+            <table class="table">
+                <thead>
+                  <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Uploaded By</th>
+                    <th scope="col"></th>
+                    
+                  </tr>
+                </thead>
+                <tbody>
+                    {% for file in files %}
+                    <tr>
+                        <td>{{file.name}}</td>
+                        <td>{{file.upload_user().name}}</td>
+                        <td>
+                          <form action="{{request.path}}/delete/{{file.uid}}" method="post">
+                            <button type="button" class="btn btn-default btn-lg">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 8 8">
+                                <path d="M3 0c-.55 0-1 .45-1 1h-1c-.55 0-1 .45-1 1h7c0-.55-.45-1-1-1h-1c0-.55-.45-1-1-1h-1zm-2 3v4.81c0 .11.08.19.19.19h4.63c.11 0 .19-.08.19-.19v-4.81h-1v3.5c0 .28-.22.5-.5.5s-.5-.22-.5-.5v-3.5h-1v3.5c0 .28-.22.5-.5.5s-.5-.22-.5-.5v-3.5h-1z" />
+                              </svg>
+                             </button>
+                        </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+
+                </tbody>
+              </table>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,111 @@
+{% extends "navbar_logged_out.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col">
+            <h1> T
+                <small class="text-muted">urning</small>
+            </h1>
+            <h1> M
+                <small class="text-muted">ovement</small>
+            </h1>
+            <h1> C
+                <small class="text-muted">ount</small>
+            </h1>
+            <h1> Summarizer</h1>
+        </div>
+        <div class="col">
+            <h5>Log In</h5>
+            <form method="POST" action="/">
+                {{ login_form.csrf_token }}
+      
+                <div class="form-group">
+      
+                  <label for="email">{{ login_form.email.label }}</label>
+                  <input type="email" class="form-control" id="email" name="email" aria-describedby="emailHelp" placeholder="Enter email">
+                    {% if login_form.email.errors %}
+                      <ul class="errors">
+                        {% for error in login_form.email.errors %}
+                          <li>{{ error }}</li>{% endfor %}
+                      </ul>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                  <label for="password">{{ login_form.password.label }}</label>
+                  <input type="password" class="form-control" id="password" name="password" placeholder="Password">
+                    {% if login_form.password.errors %}
+                      <ul class="errors">
+                        {% for error in login_form.password.errors %}
+                          <li>{{ error }}</li>{% endfor %}
+                      </ul>
+                    {% endif %}
+                </div>
+                <center>
+                  <button type="submit" name="submit" value="login" class="btn btn-primary">Log In</button>
+                </center>
+              </form>
+
+              <hr>
+              <h5>Sign Up</h5>
+              <form method="POST" action="/">
+                {{ signup_form.csrf_token }}
+      
+                <div class="form-group">
+                  <label for="name">{{ signup_form.name.label }}</label>
+                  <input type="text" class="form-control" id="name" name="name" placeholder="e.g. Rocky Balboa">
+                    {% if signup_form.name.errors %}
+                      <ul class="errors">
+                        {% for error in signup_form.name.errors %}
+                          <li>{{ error }}</li>{% endfor %}
+                      </ul>
+                    {% endif %}
+                    </div>
+                <div class="form-group">
+      
+                  <label for="email">{{ signup_form.email.label }}</label>
+                  <input type="email" class="form-control" id="email" name="email" aria-describedby="emailHelp" placeholder="youremail@address.com">
+                    {% if signup_form.email.errors %}
+                      <ul class="errors">
+                        {% for error in signup_form.email.errors %}
+                          <li>{{ error }}</li>{% endfor %}
+                      </ul>
+                    {% endif %}
+                </div>
+      
+                <div class="form-group">
+                  <label for="password">{{ signup_form.password.label }}</label>
+                  <input type="password" class="form-control" id="password" name="password" placeholder="Create a password">
+                    {% if signup_form.password.errors %}
+                      <ul class="errors">
+                        {% for error in signup_form.password.errors %}
+                          <li>{{ error }}</li>{% endfor %}
+                      </ul>
+                    {% endif %}
+                </div>
+      
+      
+                <div class="form-group">
+                  <label for="confirm">{{ signup_form.confirm.label }}</label>
+                  <input type="password" class="form-control" id="confirm" name="confirm" placeholder="Confirm password">
+                    {% if signup_form.confirm.errors %}
+                      <ul class="errors">
+                        {% for error in signup_form.confirm.errors %}
+                          <li>{{ error }}</li>{% endfor %}
+                      </ul>
+                    {% endif %}
+                </div>
+      
+      
+      
+                <center>
+                  <button type="submit" name="submit" value="signup" class="btn btn-outline-primary">Sign Up</button>
+                </center>
+              </form>
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
