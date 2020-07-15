@@ -28,3 +28,7 @@ class Config:
     SQLALCHEMY_DATABASE_URI = environ.get('SQLALCHEMY_DATABASE_URI')
     SQLALCHEMY_ECHO = False
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    # Google Maps API key
+    GMAPS_API_KEY = environ.get("GMAPS_API_KEY")
+    SUMMARY_FILE_FOLDER = environ.get("SUMMARY_FILE_FOLDER")
