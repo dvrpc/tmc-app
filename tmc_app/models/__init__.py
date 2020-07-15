@@ -1,8 +1,16 @@
 from datetime import datetime
 from pytz import timezone
-
+from pathlib import Path
+from os import environ
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+
+
+from dotenv import load_dotenv, find_dotenv
+
+load_dotenv(find_dotenv())
+SUMMARY_FILE_FOLDER = environ.get("SUMMARY_FILE_FOLDER")
+
 
 from tmc_app import db, make_random_gradient
 
@@ -77,11 +85,14 @@ class User(UserMixin, db.Model):
         return '<User {}>'.format(self.username)
 
     def projects_created(self):
-        projects_from_this_user = []
-        for project in Project.query.all():
-            if project.created_by == self.id:
-                projects_from_this_user.append(project)
-        return projects_from_this_user
+        # projects_from_this_user = []
+        # for project in Project.query.all():
+        #     if project.created_by == self.id:
+        #         projects_from_this_user.append(project)
+        # return projects_from_this_user
+        return Project.query.filter_by(
+            created_by=self.id
+        ).all()
 
     def num_projects_created(self):
         return len(self.projects_created())
@@ -105,14 +116,20 @@ class Project(db.Model):
         nullable=False,
         unique=False
     )
-
     created_by = db.Column(
         db.Integer,
         db.ForeignKey("userdata.id"),
         nullable=False
     )
+    background = db.Column(
+        db.Text,
+        nullable=False,
+        unique=False,
+        default=make_random_gradient
+    )
 
     files = db.relationship("TMCFile", backref=__tablename__, lazy=True)
+    output_files = db.relationship("OutputFile", backref=__tablename__, lazy=True)
 
     def num_files(self):
         return len(self.files)
@@ -134,15 +151,10 @@ class Project(db.Model):
         return User.query.filter_by(id=self.created_by).first()
 
     def safe_folder_name(self):
-        return self.name.replace(" ", "-")
-
-    # def slug(self):
-    #     slug = self.name
-
-    #     for char in [" ", r"/", "#"]:
-    #         slug = slug.replace(" ", "-")
-
-    #     return slug
+        folder = self.name
+        for bad_char in [" ", "'"]:
+            folder = folder.replace(bad_char, "-")
+        return folder
 
 
 class TMCFile(db.Model):
@@ -169,7 +181,51 @@ class TMCFile(db.Model):
         nullable=False
     )
 
-
     def upload_user(self):
         return User.query.filter_by(id=self.uploaded_by).first()
 
+
+class OutputFile(db.Model):
+    __tablename__ = 'outputfiledata'
+
+    uid = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+    filename = db.Column(
+        db.Text,
+        nullable=False,
+        unique=True
+    )
+    analysis_type = db.Column(
+        db.String(50),
+        nullable=False,
+        unique=False
+    )
+    project_id = db.Column(
+        db.Integer,
+        db.ForeignKey("projects.uid"),
+        nullable=False
+    )
+    created_by = db.Column(
+        db.Integer,
+        db.ForeignKey("userdata.id"),
+        nullable=False
+    )
+    created_on = db.Column(
+        db.DateTime,
+        index=False,
+        unique=False,
+        nullable=False,
+        default=datetime.now(timezone("US/Eastern")),
+    )
+
+    def created_user(self):
+        return User.query.filter_by(id=self.created_by).first()
+
+    def fancy_create_date(self):
+        return self.created_on.strftime("%b %d %Y %H:%M:%S")
+
+    def hard_code_path(self):
+
+        return Path(SUMMARY_FILE_FOLDER) / self.filename()

@@ -2,12 +2,16 @@ from pathlib import Path
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
+
+from tmc_summarizer import write_summary_file
+
 from tmc_app import make_random_gradient, db
 
 from tmc_app.models import (
     User,
     Project,
-    TMCFile
+    TMCFile,
+    OutputFile
 )
 
 from tmc_app.forms.upload_forms import UploadFilesForm
@@ -32,6 +36,10 @@ def single_project(project_id):
         project_id=project_id
     ).order_by(TMCFile.name).all()
 
+    summary_files = OutputFile.query.filter_by(
+        project_id=project_id
+    ).order_by(OutputFile.created_on.desc()).all()
+
     form = UploadFilesForm()
 
     return render_template(
@@ -39,12 +47,13 @@ def single_project(project_id):
         make_random_gradient=make_random_gradient,
         project=project,
         files=files,
-        form=form
+        form=form,
+        summary_files=summary_files
     )
 
 
 
-@project_bp.route('/project/<project_id>/save', methods=['POST'])
+@project_bp.route('/project/<project_id>/save-raw-data', methods=['POST'])
 @login_required
 def upload_file(project_id):
 
@@ -87,7 +96,7 @@ def upload_file(project_id):
     return redirect(url_for('project_bp.single_project', project_id=project_id))
 
 
-@project_bp.route('/project/<project_id>/delete/<file_id>', methods=['POST'])
+@project_bp.route('/project/<project_id>/delete/<file_id>', methods=['GET'])
 @login_required
 def delete_file(project_id, file_id):
 
@@ -103,3 +112,43 @@ def delete_file(project_id, file_id):
     flash(f"Deleted {tmc_file.name}", "info")
 
     return redirect(url_for('project_bp.single_project', project_id=project_id))
+
+
+@project_bp.route('/project/<project_id>/summarize', methods=['GET'])
+@login_required
+def summarize_files(project_id):
+
+    project = Project.query.filter_by(uid=project_id).first()
+
+    src_data_path = Path("data") / project.safe_folder_name()
+
+    # Execute the analysis code from the pure-python repository
+    xlsx_path, geojson_path = write_summary_file(
+        src_data_path,
+        output_folder=Path("data-outputs"),
+        geocode_helper="Bristol, PA"
+    )
+
+    # Log the two output files in the DB
+    xlsx = OutputFile(
+        filename=str(xlsx_path.name),
+        analysis_type="Excel File",
+        project_id=project_id,
+        created_by=current_user.id
+    )
+
+    geojson = OutputFile(
+        filename=str(geojson_path.name),
+        analysis_type="GeoJSON File",
+        project_id=project_id,
+        created_by=current_user.id
+    )
+
+    db.session.add(xlsx)
+    db.session.add(geojson)
+    db.session.commit()
+
+    flash("Summary files are ready for download", "success")
+
+    return redirect(url_for('project_bp.single_project', project_id=project_id))
+

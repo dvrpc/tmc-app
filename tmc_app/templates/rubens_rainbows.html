@@ -18,16 +18,30 @@
   </head>
   <body class="container-fluid"  style="{{ this_gradient }}; height: 100vh">
     <div class="row">
-        <div class="col p-8">
+        <div class="col-sm p-8">
             <form method="post" action="/save/rainbow" >
                     {{ form.csrf_token }}
                     <div class="form-group">
                     <label for="exampleFormControlTextarea1"><h1><code>random color gradient generator</code></h1></label>
+                      <br>
+                    <a class="btn btn-outline-primary btn-sm" href="/rainbows" role="button">generate another &#x1F308</a>
+                   <br>
                     <textarea class="form-control transparent-input" id="gradient" name="gradient" rows="5">{{this_gradient}}</textarea>
                     </div>
                     <br><br><br>
-                    <button class="btn btn-outline-primary btn-sm" type="submit">save this gradient to profile</button>
-                    <a class="btn btn-outline-primary btn-sm" href="/rainbows" role="button">generate another rainbow</a>
+                    <br>
+                    <br>
+                    <button class="btn btn-outline-primary btn-sm" type="submit">save this &#x1F308 to:</button>
+                      <br><br>
+                    <div class="form-group transparent-input" style="width:15%">
+                      <select class="form-control transparent-input" id="location" name="location">
+                        <option>{{ current_user.name }}'s profile</option>
+                        {% for project in projects %}
+                        <option> Project: {{ project.name }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+
                 </form>
         </div>
 

@@ -36,7 +36,7 @@ def dashboard():
     ).all()
 
     return render_template(
-        'dashboard.html',
+        'project_dashboard.html',
         make_random_gradient=make_random_gradient,
         form=form,
         your_projects=your_projects,
@@ -77,10 +77,14 @@ def add_project():
 @main_bp.route('/rainbows', methods=['GET'])
 @login_required
 def rainbows():
+
+    projects = Project.query.order_by(Project.name).all()
+
     return render_template(
         'rubens_rainbows.html',
         this_gradient=make_random_gradient(),
-        form=SaveRainbowForm()
+        form=SaveRainbowForm(),
+        projects=projects
     )
 
 
@@ -89,8 +93,26 @@ def rainbows():
 def save_rainbow():
 
     form = SaveRainbowForm()
+    location = form.location.data
+    gradient = form.gradient.data
 
-    current_user.background = form.gradient.data
-    db.session.commit()
+    # Assign gradient to user if "Project" is not in the text
+    if "'s profile" in location:
+        current_user.background = gradient
+        db.session.commit()
 
-    return redirect(url_for('main_bp.dashboard'))
+        return redirect(url_for('main_bp.dashboard'))
+
+    # Otherwise, assign to the project by ID
+    else:
+        project_name = location.replace("Project: ", "")
+        project = Project.query.filter_by(
+            name=project_name
+        ).first()
+
+        project.background = gradient
+
+        db.session.commit()
+
+        return redirect(url_for('project_bp.single_project',
+                                project_id=project.uid))

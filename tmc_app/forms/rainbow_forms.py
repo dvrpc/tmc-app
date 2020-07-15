@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import SubmitField, TextField
+from wtforms import SubmitField, TextField, StringField
 from wtforms.validators import DataRequired
 
 
@@ -10,4 +10,11 @@ class SaveRainbowForm(FlaskForm):
             DataRequired(),
         ]
     )
+    location = StringField(
+        "Where to save this gradient",
+        validators=[
+            DataRequired()
+        ]
+    )
+
     submit = SubmitField('Add Project')

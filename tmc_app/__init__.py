@@ -70,6 +70,9 @@ def create_app():
         from tmc_app.routes import single_project
         app.register_blueprint(single_project.project_bp)
 
+        from tmc_app.routes import downloads
+        app.register_blueprint(downloads.download_bp)
+
         # from my_stuff.routes import containers
         # app.register_blueprint(containers.container_bp)
 
