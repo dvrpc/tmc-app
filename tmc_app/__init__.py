@@ -49,7 +49,9 @@ background: linear-gradient({rot1}deg, {_gradient(color1)} 70.71%),
 
 def create_app():
     """Construct the core app object."""
-    app = Flask(__name__, instance_relative_config=False)
+    app = Flask(__name__,
+                instance_relative_config=False,
+                static_url_path='/static')
 
     # Application Configuration
     app.config.from_object('config.Config')
@@ -72,6 +74,9 @@ def create_app():
 
         from tmc_app.routes import downloads
         app.register_blueprint(downloads.download_bp)
+
+        from tmc_app.data_viz.dash_app import create_dashboard
+        app = create_dashboard(app)
 
         # from my_stuff.routes import containers
         # app.register_blueprint(containers.container_bp)
