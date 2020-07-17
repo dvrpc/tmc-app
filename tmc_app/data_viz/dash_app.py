@@ -7,6 +7,7 @@ import dash_html_components as html
 import dash_core_components as dcc
 from dash.dependencies import Input, Output
 import plotly.express as px
+import plotly.graph_objects as go
 
 from tmc_app.models import (
     Project,
@@ -24,17 +25,24 @@ parameter_style = {
 
 def make_treemap_figure(df, path_order=['wt', 'leg', 'movement']):
     df.rename(columns={0: "total"}, inplace=True)
-    return px.treemap(df, path=path_order, values="total")
+
+    fig = px.treemap(df, path=path_order, values="total", width=800, height=400)
+
+    return fig.update_layout(margin=dict(l=20, r=20, t=20, b=20))
 
 
 def make_faceted_bar_plot(df):
-    # TODO change 0 to 'total'
     df.rename(columns={0: "total"}, inplace=True)
     return px.bar(df, x="movement", y="total", barmode="group",
                   facet_row="leg", facet_col="wt",
                   category_orders={"wt": ["Heavy", "Light", "Bikes", "Peds"],
                                     "leg": ["NB", "SB", "EB", "WB"],
                                     "movement": ["U", "Left", "Thru", "Right", "Xwalk"]})
+
+
+def make_timeseries_bar_plot(df):
+    df.rename(columns={0: "total"}, inplace=True)
+    return px.bar(df, height=400, color_discrete_sequence=px.colors.qualitative.Dark24)
 
 
 def make_nice_txt(v):
@@ -58,7 +66,7 @@ def create_dashboard(server):
     """Create a Plotly Dash dashboard."""
     dash_app = dash.Dash(
         server=server,
-        routes_pathname_prefix='/dashapp/',
+        routes_pathname_prefix='/data-viewer/',
         external_stylesheets=[
                 {'href': 'https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css',
                     'rel': 'stylesheet',
@@ -93,60 +101,101 @@ def create_dashboard(server):
     # # Load DataFrame
     first_file = projects_with_files[0].files[0]
     tmc = TMC_Raw_Data(first_file.filepath())
-    df_treemap = tmc.treemap_df("7:00", "10:00")
+    df_treemap = tmc.treemap_df("5:00", "20:00")
+    full_time_df = tmc.all_raw_data()
+
+    filtered_time_df = tmc.filter_df_by_start_end_time(full_time_df, "5:00", "20:00")
 
     # Make a dictionary for our time slider snaps
     slider_marks = {}
     for h in range(0, 24):
+        if h > 12:
+            ampm = "pm"
+            safe_h = h - 12
+        else:
+            ampm = "am"
+            safe_h = h
+
         slider_marks[h] = {
-            "label": f"{h}:00",
-            "style": {"transform": "rotate(0deg)"}
+            "label": f"{safe_h} {ampm}",
+            "style": {"transform": "rotate(0deg)",
+                       "font-size": '70%'}
         }
-       
 
     # Create Layout
     dash_app.layout = html.Div([
+        html.Nav([
+            html.A('Exit', className="nav-item nav-link btn btn-outline-primary btn-sm", href='/my-projects'),
+        ], className="nav navbar"),
         html.Div([
+            # Header text with filename and selected start/end times
             html.Div([
-                html.H1(["TMC Data Explorer"], className="mb-4"),
-                html.P(["Select a project below:"], className="mt-4"),
-                dcc.Dropdown(
-                    id='project-selector',
-                    options=project_options,
-                    value=project_options[0]["value"]
-                ),
-                html.P(["Select a file from this project:"], className="mt-4"),
-                dcc.Dropdown(
-                    id='file-selector',
-                    options=file_options,
-                    value=file_options[1]["value"]
-                ),
-            ], className="col"),
-            html.Div([
-                html.Hr(),
-                html.H5([
-                    "Analyzing: ",
+                html.H3([
+                    "Analyzing ",
                     html.Span(
                         id="file-txt",
                         className="p-2 btn btn-sm btn-light mb-2",
                         style=parameter_style
                     ),
-                    html.Br(),
-                    "Starting @ ",
+                    " from ",
                     html.Span(
                         id="start-time",
                         className="p-2 btn btn-sm btn-light mb-2",
                         style=parameter_style
                     ),
-                    html.Br(),
-                    "Ending @ ",
+                    " to ",
                     html.Span(
                         id="end-time",
                         className="p-2 btn btn-sm btn-light mb-2",
                         style=parameter_style
                     ),
-                ]),
-                html.P("Adjust the treemap nesting order:"),
+                ], className=""),
+            ], className="col- 8"),
+            html.Div([
+                dcc.Dropdown(
+                    id='project-selector',
+                    options=project_options,
+                    value=project_options[0]["value"],
+                ),
+            ], className="col-4"),
+        ], className="row"),
+        html.Div([
+        ], className="row"),
+        html.Div([
+            html.Div([
+                dcc.RangeSlider(
+                    id="range-selector",
+                    marks=slider_marks,#{i: f'{i}' for i in range(0, 24)},
+                    min=0,
+                    max=24,
+                    value=[5, 20],
+                    step=0.25,
+                    allowCross=False
+                ),
+            ], className="col-12"),
+            html.Div([
+                html.Br(), html.Br(),
+                html.Span(["Select a file from this project:"],),
+                dcc.Dropdown(
+                    id='file-selector',
+                    options=file_options,
+                    value=file_options[1]["value"],
+                    style={"font-size": "0.5rem"}
+                ),
+                html.Span("Choose modes to include:"),
+                dcc.Dropdown(
+                    id="mode-selector",
+                    options=[
+                        {'label': 'Light Vehicles', 'value': 'Light'},
+                        {'label': 'Heavy Vehicles', 'value': 'Heavy'},
+                        {'label': 'Bicyclists', 'value': 'Bikes'},
+                        {'label': 'Pedestrians', 'value': 'Peds'},
+                    ],
+                    multi=True,
+                    value=["Light", "Heavy", "Bikes", "Peds"],
+                    style={"font-size": "0.5rem"}
+                ),
+                html.Span("Adjust the treemap nesting order:"),
                 dcc.Dropdown(
                     id="treemap-path-order",
                     options=[
@@ -156,38 +205,32 @@ def create_dashboard(server):
                     ],
                     multi=True,
                     value=["leg", "movement", "wt"],
+                    style={"font-size": "0.7rem"}
                 ),
-            ], className="col"),
-        ], className="row mt-2"),
-        html.Div([
-            html.Div([
-                dcc.RangeSlider(
-                    id="range-selector",
-                    marks=slider_marks,#{i: f'{i}' for i in range(0, 24)},
-                    min=0,
-                    max=24,
-                    value=[7, 10],
-                    step=0.25,
-                    allowCross=False
-                ),
-            ], className="col-xl"),
-
-        ], className="row mt-4"),
-        html.Div([
+            ], className="col-3 mt-5"),
             html.Div([
                 dcc.Graph(
                     id="treemap-graph",
                     figure=make_treemap_figure(df_treemap)
                 ),
+            ], className="col-7"),
+        ], className="row"),
+        html.Div([
+            html.Div([
+                dcc.Graph(
+                    id="time-bar-graph",
+                    figure=make_timeseries_bar_plot(filtered_time_df)
+                ),
+            ], className="col"),
+        ], className="row"),
+        html.Div([
+            html.Div([
                 dcc.Graph(
                     id="facet-bar-graph",
                     figure=make_faceted_bar_plot(df_treemap)
-                )
-
-            ], className="col-xl"),
-        ], className="row mt-4"),
-
-
+                ),
+            ], className="col"),
+        ], className="row"),
     ], className="container")
 
     init_callbacks(dash_app)
@@ -200,6 +243,7 @@ def init_callbacks(dash_app):
                         Output('end-time', 'children'),
                         Output('treemap-graph', 'figure'),
                         Output('facet-bar-graph', 'figure'),
+                        Output('time-bar-graph', 'figure'),
                         Output('file-txt', 'children'),
                         Output('project-selector', 'options'),
                         Output('file-selector', 'options'),
@@ -240,17 +284,27 @@ def init_callbacks(dash_app):
             b = '23:45'
 
         tmc = TMC_Raw_Data(file_object.filepath())
-        df = tmc.treemap_df(a, b)
-        treemap_figure = make_treemap_figure(df, path_order=treemap_order)
-        facet_barplot = make_faceted_bar_plot(df)
 
-        return [a], [b], treemap_figure, facet_barplot, file_txt, project_options, file_options
+        # Treemap and faceted bar plot use the same df
+        tree_df = tmc.treemap_df(a, b)
+        treemap_figure = make_treemap_figure(tree_df, path_order=treemap_order)
+        facet_barplot = make_faceted_bar_plot(tree_df)
+
+        # Time series uses the full dataframe
+        time_df = tmc.all_raw_data()
+        filtered_time_df = tmc.filter_df_by_start_end_time(time_df, a, b)
+
+        time_barplot = make_timeseries_bar_plot(filtered_time_df)
+
+        return ([a], [b],
+                treemap_figure, facet_barplot, time_barplot,
+                file_txt, project_options, file_options)
 
 
 def create_data_table(df):
     """Create Dash datatable from Pandas DataFrame."""
     table = dash_table.DataTable(
-        id='database-table',
+        id='treemap-table',
         columns=[{"name": i, "id": i} for i in df.columns],
         data=df.to_dict('records'),
         sort_action="native",
