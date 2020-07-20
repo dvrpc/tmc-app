@@ -44,7 +44,7 @@ def dashboard():
     )
 
 
-@main_bp.route('/my-projects/add', methods=['POST'])
+@main_bp.route('/projects/add', methods=['POST'])
 @login_required
 def add_project():
     """Logged-in User landing page"""
@@ -52,16 +52,23 @@ def add_project():
     # Add the project if inputs are valid
     form = AddProjectForm()
     if form.validate_on_submit():
-        project = Project(
-            name=form.name.data,
-            description=form.description.data,
-            created_by=current_user.id
-        )
 
-        db.session.add(project)
-        db.session.commit()
+        all_project_names = [p.name for p in Project.query.all()]
 
-        flash(f"Added Project: {form.name.data}", "success")
+        if form.name.data in all_project_names:
+            flash(f"A project with this name already exists: {form.name.data}", "danger")
+
+        else:
+            project = Project(
+                name=form.name.data,
+                description=form.description.data,
+                created_by=current_user.id
+            )
+
+            db.session.add(project)
+            db.session.commit()
+
+            flash(f"Added Project: {form.name.data}", "success")
 
         return redirect(url_for('main_bp.dashboard'))
 
