@@ -32,18 +32,24 @@ def get_started():
 
         if request.form['submit'] == 'login':
 
-            # Validate login attempt
+
             if login_form.validate_on_submit() and login_form.email.data:
                 user = User.query.filter_by(email=login_form.email.data).first()
                 if user and user.check_password(password=login_form.password.data):
                     login_user(user)
                     return redirect(url_for('main_bp.dashboard'))
 
-                flash(r'Invalid username/password combination', "danger")
+            flash(r'Invalid username/password combination', "danger")
 
         if request.form['submit'] == 'signup':
 
-            if signup_form.validate_on_submit() and signup_form.email.data:
+            # Validate login attempt
+            email_domain = request.form["email"].split("@")[-1]
+            if email_domain != "dvrpc.org":
+                flash('This application is only accessible to DVRPC employees.', "danger")
+
+
+            elif signup_form.validate_on_submit() and signup_form.email.data:
                 existing_user = User.query.filter_by(email=signup_form.email.data).first()
                 if existing_user is None:
                     user = User(
@@ -78,3 +84,9 @@ def unauthorized():
     """Redirect unauthorized users to Login page."""
     flash('You must be logged in to view that page.')
     return redirect(url_for('auth_bp.get_started'))
+
+
+@auth_bp.route('/logout', methods=['GET'])
+def logout():
+    logout_user()
+    return redirect("/")
