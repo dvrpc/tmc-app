@@ -210,7 +210,7 @@ def create_dashboard(server):
     dash_app.layout = html.Div([
         html.Nav([
             html.A('Exit', className="nav-item nav-link btn btn-outline-primary btn-sm", href='/projects'),
-        ], className="nav navbar"),
+        ], className="nav navbar mb-2"),
         html.Div([
             # Header text with filename and selected start/end times
             html.Div([
