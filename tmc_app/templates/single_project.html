@@ -39,15 +39,24 @@
           <li class="nav-item">
             <a class="nav-link" href="/rainbows">&#x1F308</a>
           </li>
-
-          <li class="nav-item">
-            <a class="nav-link" href="/projects">All Projects</a>
-          </li>
           <li class="nav-item">
             <a class="nav-link" href="/data-explorer">Data Explorer</a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/projects">All Projects</a>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              Your Projects
+            </a>
+            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+              {% for project in current_user.projects_created() %}
+                <a class="dropdown-item" href="/project/{{project.uid}}">{{project.name}}</a>
+              {% endfor %}
+            </div>
+          </li>
           <li class="nav-item active">
-            <a class="nav-link" href="/project/{{project.uid}}">Project: {{project.name}}<span class="sr-only">(current)</span></a>
+            <a class="nav-link" href="/project/{{project.uid}}">{{project.name}}<span class="sr-only">(current)</span></a>
           </li>
         </ul>
       </div>

@@ -35,18 +35,25 @@
           <li class="nav-item">
             <a class="nav-link" href="/logout">Log Out</a>
           </li>
-
           <li class="nav-item">
             <a class="nav-link" href="/rainbows">&#x1F308</a>
-          </li>
-
-          <li class="nav-item active">
-            <a class="nav-link" href="/projects">All Projects <span class="sr-only">(current)</span></a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="/data-explorer">Data Explorer</a>
           </li>
-          
+          <li class="nav-item active">
+            <a class="nav-link" href="/projects">All Projects <span class="sr-only">(current)</span></a>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              Your Projects
+            </a>
+            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+              {% for project in current_user.projects_created() %}
+                <a class="dropdown-item" href="/project/{{project.uid}}">{{project.name}}</a>
+              {% endfor %}
+            </div>
+          </li>
         </ul>
       </div>
     </nav>
@@ -68,7 +75,7 @@
           <h5>
               Add a Project
           </h5>
-            <form method="POST" action="/my-projects/add">
+            <form method="POST" action="/projects/add">
               {{ form.csrf_token }}
 
               <div class="form-group">
@@ -132,7 +139,7 @@
       <p>Projects created by others are shown below. You can upload data to and analyze these projects as well.</p>
       <p>
         User profiles and projects get a randomly generated "rainbow" as the default color.
-        Some are really nice, some are more mediocre. Feel free to play around with the random generator
+        Some are really nice, some less so. Feel free to play around with the random generator
         by <a href="/rainbows">clicking here</a>. This page allows you to update the default colors
         for your profile or any project.
       </p>
@@ -189,6 +196,7 @@
         <div class="card border-white" style="{{ project.background }}">
           <div class="card-body">
             <h5 class="card-title">{{ project.name }}</h5>
+            <p>{{project.num_files()}} files</p>
             <a href="/project/{{project.uid}}" class="btn btn-light btn-sm">Open</a>
           </div>
         </div>
