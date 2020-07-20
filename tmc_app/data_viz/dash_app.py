@@ -1,20 +1,24 @@
 """Instantiate a Dash app."""
-import numpy as np
 import pandas as pd
 import dash
 import dash_table
 import dash_html_components as html
 import dash_core_components as dcc
-from dash.dependencies import Input, Output
-import plotly.express as px
+from dash.dependencies import Input, Output, State
+from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
+from flask_caching import Cache
+from datetime import time, datetime
+from dotenv import load_dotenv, find_dotenv
+import sqlalchemy
+from os import environ
+import plotly.express as px
 
-from tmc_app.models import (
-    Project,
-    TMCFile
-)
+from tmc_app.models import Project
 
-from tmc_summarizer import TMC_File as TMC_Raw_Data
+load_dotenv(find_dotenv())
+SQLALCHEMY_DATABASE_URI = environ.get("SQLALCHEMY_DATABASE_URI")
+
 
 parameter_style = {
     "font-family": "'Roboto Mono', monospace",
@@ -22,27 +26,7 @@ parameter_style = {
     "font-weight": "bold",
 }
 
-
-def make_treemap_figure(df, path_order=['wt', 'leg', 'movement']):
-    df.rename(columns={0: "total"}, inplace=True)
-
-    fig = px.treemap(df, path=path_order, values="total", width=800, height=400)
-
-    return fig.update_layout(margin=dict(l=20, r=20, t=20, b=20))
-
-
-def make_faceted_bar_plot(df):
-    df.rename(columns={0: "total"}, inplace=True)
-    return px.bar(df, x="movement", y="total", barmode="group",
-                  facet_row="leg", facet_col="wt",
-                  category_orders={"wt": ["Heavy", "Light", "Bikes", "Peds"],
-                                    "leg": ["NB", "SB", "EB", "WB"],
-                                    "movement": ["U", "Left", "Thru", "Right", "Xwalk"]})
-
-
-def make_timeseries_bar_plot(df):
-    df.rename(columns={0: "total"}, inplace=True)
-    return px.bar(df, height=400, color_discrete_sequence=px.colors.qualitative.Dark24)
+TIMEOUT = 60
 
 
 def make_nice_txt(v):
@@ -61,51 +45,7 @@ def make_nice_txt(v):
     return f"{h}:{minute}"
 
 
-
-def create_dashboard(server):
-    """Create a Plotly Dash dashboard."""
-    dash_app = dash.Dash(
-        server=server,
-        routes_pathname_prefix='/data-viewer/',
-        external_stylesheets=[
-                {'href': 'https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css',
-                    'rel': 'stylesheet',
-                    'integrity': 'sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO',
-                    'crossorigin': 'anonymous'
-                },
-                {'href': 'https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap',
-                    'rel': 'stylesheet',
-                },
-            '/static/css/dash_app.css',
-        ]
-    )
-    dash_app.scripts.config.serve_locally = False
-    dcc._js_dist[0]['external_url'] = 'https://cdn.plot.ly/plotly-basic-latest.min.js'
-
-    # Load up all the projects into a list of dicts
-
-    file_options = [{"label": "All files for this project", "value": "all"}]
-    project_options = []
-    projects_with_files = []
-    for project in Project.query.all():
-        if project.files:
-            projects_with_files.append(project)
-            project_options.append(
-                {"label": project.name, "value": project.uid}
-            )
-            for f in project.files:
-                file_options.append(
-                    {"label": f.name, "value": f.uid}
-                )
-
-    # # Load DataFrame
-    first_file = projects_with_files[0].files[0]
-    tmc = TMC_Raw_Data(first_file.filepath())
-    df_treemap = tmc.treemap_df("5:00", "20:00")
-    full_time_df = tmc.all_raw_data()
-
-    filtered_time_df = tmc.filter_df_by_start_end_time(full_time_df, "5:00", "20:00")
-
+def slider_marks():
     # Make a dictionary for our time slider snaps
     slider_marks = {}
     for h in range(0, 24):
@@ -121,6 +61,140 @@ def create_dashboard(server):
             "style": {"transform": "rotate(0deg)",
                        "font-size": '70%'}
         }
+    return slider_marks
+
+
+def generate_treemap_data(df_timeseries, id_col: str = "location"):
+    """
+    This function consumes the dataframe from df_timeseries()
+    and transforms it to fit the plotly.express.treemap()
+    """
+
+    df_timeseries = df_timeseries.copy()
+
+    # Update with a multi-index to include the file id, then remove the fid column
+    df_timeseries.set_index([df_timeseries[id_col], df_timeseries.index], inplace=True)
+    del df_timeseries[id_col]
+
+    # Stack the dataframe, then reset_index() to explode the multi-index into cols
+    df_stacked = pd.DataFrame(
+        df_timeseries.stack(), columns=["total"]
+    ).reset_index()
+
+    # print(df_timeseries)
+
+    # Remove all rows where the total is zero
+    df_filtered = df_stacked[df_stacked.total != 0]
+
+    # Explode the
+    attribute_cols = {
+        0: "veh_class",
+        1: "leg",
+        2: "movement"
+    }
+    df_attrs = df_filtered['level_2'].str.split(
+        '_', expand=True
+    ).rename(columns=attribute_cols)
+
+    df = pd.concat([df_filtered, df_attrs], axis=1, sort=False)
+    # print(df)
+    df["hour"] = [x.hour for x in df["time"]]
+    df["minute"] = [":" + str(x.minute) for x in df["time"]]
+
+    for col in ["level_2", "time"]:
+        del df[col]
+
+    return df
+
+
+def timeseries_figure(df_timeries,
+                    #   figure_margin: dict = dict(l=20, r=20, t=20, b=20),
+                      plot_kwargs: dict = {
+                        "facet_col": "location",
+                        "facet_col_wrap": 2,
+                        "color_discrete_sequence": px.colors.qualitative.Dark24,
+                        "facet_row_spacing": 0.04, # default is 0.07 when facet_col_wrap is used
+                        "facet_col_spacing": 0.04, # default is 0.03
+
+                       }):
+    fig = px.bar(df_timeries, **plot_kwargs)
+    # fig.update_layout(margin=figure_margin)
+    # fig.layout.plot_bgcolor = "rgba(0,0,0,0)"
+
+    for axis in fig.layout:
+            fig.layout.yaxis.title.font.size = 5
+
+    return fig
+
+
+def treemap_figure(df_treemap,
+                   figure_margin: dict = dict(l=20, r=20, t=20, b=20),
+                   plot_kwargs: dict = {
+                       "values": "total",
+                       "path": ["veh_class", "fid", "leg", "movement", "hour", "minute"],
+                    }):
+    fig = px.treemap(df_treemap, **plot_kwargs)
+    fig.update_layout(margin=figure_margin)
+    return fig
+
+
+def create_dashboard(server):
+    """Create a Plotly Dash dashboard."""
+
+    # Create the dash app with a connection to the larger Flask app via 'server'
+    # --------------------------------------------------------------------------
+
+    dash_app = dash.Dash(
+        server=server,
+        routes_pathname_prefix='/data-viewer/',
+        external_stylesheets=[
+                {'href': 'https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css',
+                    'rel': 'stylesheet',
+                    'integrity': 'sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO',
+                    'crossorigin': 'anonymous'
+                },
+                {'href': 'https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap',
+                    'rel': 'stylesheet',
+                },
+        ]
+    )
+    dash_app.scripts.config.serve_locally = False
+    dcc._js_dist[0]['external_url'] = 'https://cdn.plot.ly/plotly-basic-latest.min.js'
+
+    # Load the initial state of the page
+    # ----------------------------------
+
+    # Load up all the projects from the Flask DB into a list of dicts
+    active_project = Project.query.first()
+    fid_list = [f.uid for f in active_project.files]
+    file_options = [{"label": f.name(), "value": f.uid} for f in active_project.files]
+
+
+    project_options = [{"label": p.name, "value": p.uid} for p in Project.query.all()]
+
+    # Make a dataframe of the filedata
+
+
+    # LOAD UP THE DATA AND MAKE THE PLOTS
+    # -----------------------------------
+    df_timeseries = active_project.generate_timeseries_data()
+
+    df_treemap = generate_treemap_data(df_timeseries, id_col="location")
+
+    kwargs_timeseries = {
+        "height": len(fid_list) / 2 * 300,
+        "facet_col": "location",
+        "facet_col_wrap": 2,
+        "color_discrete_sequence": px.colors.qualitative.Dark24
+    }
+
+
+
+    plot_timeseries = timeseries_figure(df_timeseries, plot_kwargs=kwargs_timeseries)
+
+    kwargs_treeplot = {"path": ["veh_class", "leg", "movement"]}
+    plot_tree = treemap_figure(df_treemap, plot_kwargs=kwargs_treeplot)
+
 
     # Create Layout
     dash_app.layout = html.Div([
@@ -130,34 +204,10 @@ def create_dashboard(server):
         html.Div([
             # Header text with filename and selected start/end times
             html.Div([
-                html.H3([
-                    "Analyzing ",
-                    html.Span(
-                        id="file-txt",
-                        className="p-2 btn btn-sm btn-light mb-2",
-                        style=parameter_style
-                    ),
-                    " from ",
-                    html.Span(
-                        id="start-time",
-                        className="p-2 btn btn-sm btn-light mb-2",
-                        style=parameter_style
-                    ),
-                    " to ",
-                    html.Span(
-                        id="end-time",
-                        className="p-2 btn btn-sm btn-light mb-2",
-                        style=parameter_style
-                    ),
+                html.H1([
+                    "TMC Data Viewer",
                 ], className=""),
-            ], className="col- 8"),
-            html.Div([
-                dcc.Dropdown(
-                    id='project-selector',
-                    options=project_options,
-                    value=project_options[0]["value"],
-                ),
-            ], className="col-4"),
+            ], className="col-8"),
         ], className="row"),
         html.Div([
         ], className="row"),
@@ -165,7 +215,7 @@ def create_dashboard(server):
             html.Div([
                 dcc.RangeSlider(
                     id="range-selector",
-                    marks=slider_marks,#{i: f'{i}' for i in range(0, 24)},
+                    marks=slider_marks(),
                     min=0,
                     max=24,
                     value=[5, 20],
@@ -174,44 +224,69 @@ def create_dashboard(server):
                 ),
             ], className="col-12"),
             html.Div([
-                html.Br(), html.Br(),
-                html.Span(["Select a file from this project:"],),
+                html.H3([
+                    "Analyzing ",
+                    html.Span(
+                        id="txt-name",
+                        className="p-2 btn btn-sm btn-light mb-2",
+                        style=parameter_style
+                    ),
+                    " from ",
+                    html.Span(
+                        id="txt-start",
+                        className="p-2 btn btn-sm btn-light mb-2",
+                        style=parameter_style
+                    ),
+                    " to ",
+                    html.Span(
+                        id="txt-end",
+                        className="p-2 btn btn-sm btn-light mb-2",
+                        style=parameter_style
+                    ),
+                ], className=""),
+            ], className="col-12 text-center"),
+            html.Div([
+                html.Span(["Select a project:"]),
                 dcc.Dropdown(
-                    id='file-selector',
-                    options=file_options,
-                    value=file_options[1]["value"],
-                    style={"font-size": "0.5rem"}
+                    id='project-selector',
+                    options=project_options,
+                    value=project_options[0]["value"],
                 ),
-                html.Span("Choose modes to include:"),
+                html.Br(),
+                html.Span("Select modes to include:"),
                 dcc.Dropdown(
                     id="mode-selector",
                     options=[
-                        {'label': 'Light Vehicles', 'value': 'Light'},
-                        {'label': 'Heavy Vehicles', 'value': 'Heavy'},
-                        {'label': 'Bicyclists', 'value': 'Bikes'},
-                        {'label': 'Pedestrians', 'value': 'Peds'},
+                        {'label': 'Light Vehicles', 'value': 'light'},
+                        {'label': 'Heavy Vehicles', 'value': 'heavy'},
+                        {'label': 'Bicyclists', 'value': 'bikes'},
+                        {'label': 'Pedestrians', 'value': 'peds'},
                     ],
                     multi=True,
-                    value=["Light", "Heavy", "Bikes", "Peds"],
+                    value=["bikes", "peds", "light", "heavy"],
                     style={"font-size": "0.5rem"}
                 ),
                 html.Span("Adjust the treemap nesting order:"),
                 dcc.Dropdown(
                     id="treemap-path-order",
                     options=[
-                        {'label': 'Class', 'value': 'wt'},
+                        {'label': 'File', 'value': 'location'},
+                        {'label': 'Class', 'value': 'veh_class'},
                         {'label': 'Leg', 'value': 'leg'},
-                        {'label': 'Movement', 'value': 'movement'}
+                        {'label': 'Movement', 'value': 'movement'},
+                        {'label': 'Hour', 'value': 'hour'},
+                        {'label': 'Minute', 'value': 'minute'},
                     ],
                     multi=True,
-                    value=["leg", "movement", "wt"],
+                    value=["location", "leg", "movement", "veh_class"],
                     style={"font-size": "0.7rem"}
                 ),
+                html.P(id="txt-qaqc", className="mt-2"),
             ], className="col-3 mt-5"),
             html.Div([
                 dcc.Graph(
                     id="treemap-graph",
-                    figure=make_treemap_figure(df_treemap)
+                    figure=plot_tree
                 ),
             ], className="col-7"),
         ], className="row"),
@@ -219,101 +294,110 @@ def create_dashboard(server):
             html.Div([
                 dcc.Graph(
                     id="time-bar-graph",
-                    figure=make_timeseries_bar_plot(filtered_time_df)
-                ),
-            ], className="col"),
-        ], className="row"),
-        html.Div([
-            html.Div([
-                dcc.Graph(
-                    id="facet-bar-graph",
-                    figure=make_faceted_bar_plot(df_treemap)
+                    figure=plot_timeseries
                 ),
             ], className="col"),
         ], className="row"),
     ], className="container")
 
     init_callbacks(dash_app)
-
     return dash_app.server
 
 
 def init_callbacks(dash_app):
-    @dash_app.callback([Output('start-time', 'children'),
-                        Output('end-time', 'children'),
+    @dash_app.callback([Output('time-bar-graph', 'figure'),
                         Output('treemap-graph', 'figure'),
-                        Output('facet-bar-graph', 'figure'),
-                        Output('time-bar-graph', 'figure'),
-                        Output('file-txt', 'children'),
+                        Output('txt-name', 'children'),
+                        Output('txt-start', 'children'),
+                        Output('txt-end', 'children'),
                         Output('project-selector', 'options'),
-                        Output('file-selector', 'options'),
+                        Output('txt-qaqc', 'children'),
                         ],
 
                        [Input('project-selector', 'value'),
                         Input('range-selector', 'value'),
-                        Input('file-selector', 'value'),
+                        Input('mode-selector', 'value'),
                         Input('treemap-path-order', 'value'),
                         ])
-    def update_ph_selection_text(project_id, selected_range, file_id, treemap_order):
+    def change_project(pid, selected_range, mode_selector, treemap_path_order):
+        """
+        Triggers
+            - User changes the PROJECT selection
 
-        this_project = Project.query.filter_by(uid=project_id).first()
+        Actions
+            - QAQC text 
+        """
 
-        if file_id == "all":
-            file_txt = f"all {this_project.name} files"
-        elif file_id == "no files":
-            file_txt = "No files have been uploaded for this project yet"
-        else:
-            this_file = TMCFile.query.filter_by(uid=file_id).first()
-            file_txt = this_file.name
+        project_options = [{"label": p.name, "value": p.uid} for p in Project.query.all()]
 
-        file_options = [{"label": "Analyze all files for this project", "value": "all"}]
-        file_options += [{"label": f.name, "value": f.uid} for f in this_project.files]
+        # WHEN THE PROJECT SELECTION CHANGES, UPDATE FILE LIST OPTIONS
+        # ------------------------------------------------------------
 
-        project_options = [{"label": p.name, "value": p.uid} for p in Project.query.all() if p.files]
+        # Get the selected project
+        this_project = Project.query.filter_by(uid=pid).first()
+        fid_list = [f.uid for f in this_project.files]
 
-        file_object = TMCFile.query.filter_by(uid=file_id).first()
+        # HANDLE THE TIME SLIDER INPUT
+        # ----------------------------
 
         a, b = selected_range
 
-
-        a = make_nice_txt(a)
-        b = make_nice_txt(b)
+        a_txt = make_nice_txt(a)
+        b_txt = make_nice_txt(b)
 
         # Make sure that the end time isn't '24:00'
         if b == '24:00':
             b = '23:45'
 
-        tmc = TMC_Raw_Data(file_object.filepath())
+        df_timeseries = this_project.generate_timeseries_data(
+            start_time=a_txt,
+            end_time=b_txt,
+            fids_to_include=fid_list,
+            modes_to_include=mode_selector)
 
-        # Treemap and faceted bar plot use the same df
-        tree_df = tmc.treemap_df(a, b)
-        treemap_figure = make_treemap_figure(tree_df, path_order=treemap_order)
-        facet_barplot = make_faceted_bar_plot(tree_df)
+        qaqc_txt = None
+        if df_timeseries.shape[0] == 0:
+            print("No rows were returned from this query")
+            raise PreventUpdate
 
-        # Time series uses the full dataframe
-        time_df = tmc.all_raw_data()
-        filtered_time_df = tmc.filter_df_by_start_end_time(time_df, a, b)
-
-        time_barplot = make_timeseries_bar_plot(filtered_time_df)
-
-        return ([a], [b],
-                treemap_figure, facet_barplot, time_barplot,
-                file_txt, project_options, file_options)
+        df_treemap = generate_treemap_data(df_timeseries)
 
 
-def create_data_table(df):
-    """Create Dash datatable from Pandas DataFrame."""
-    table = dash_table.DataTable(
-        id='treemap-table',
-        columns=[{"name": i, "id": i} for i in df.columns],
-        data=df.to_dict('records'),
-        sort_action="native",
-        sort_mode='native',
-        page_size=300
-    )
-    return table
+        # # Don't update the plots if the query returns zero rows
+        # if df_timeseries.shape[0] < 1:
+        #     plot_timeseries = existing_time_graph
+        #     plot_tree = existing_tree_graph
+        # else:
+
+        if len(fid_list) % 2 == 1:
+            barplot_height = (len(fid_list) + 1) / 2 * 200
+            cols = 2
+        else:
+            barplot_height = len(fid_list) / 2.0 * 200
+            cols = 2
+
+        if barplot_height > 1000:
+            barplot_height = 1000
+            cols = 3
+
+        if not qaqc_txt:
+            qaqc_txt = barplot_height
+
+        kwargs_timeseries = {
+            "height": barplot_height,
+            "facet_col": "location",
+            "facet_col_wrap": cols,
+            "color_discrete_sequence": px.colors.qualitative.Dark24,
+        }
+        plot_timeseries = timeseries_figure(df_timeseries, plot_kwargs=kwargs_timeseries)
 
 
-def load_tmc_file(f: TMCFile) -> TMC_Raw_Data:
+        if len(treemap_path_order) < 1:
+            print("User did not select any options for the treemap nesting order")
+            raise PreventUpdate
+        else:
+            kwargs_treeplot = {"path": treemap_path_order}
+            plot_tree = treemap_figure(df_treemap, plot_kwargs=kwargs_treeplot)
 
-    return TMC_Raw_Data(f.filepath(), geocode_helper="Bristol, PA")
+
+        return plot_timeseries, plot_tree, this_project.name, a_txt, b_txt, project_options, qaqc_txt
