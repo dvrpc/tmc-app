@@ -12,3 +12,7 @@ flask_user_data/
 data/
 
 data-outputs/
+
+cache-directory/
+
+*.ipynb
