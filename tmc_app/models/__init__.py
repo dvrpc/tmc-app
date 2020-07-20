@@ -4,16 +4,16 @@ from pathlib import Path
 from os import environ
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-
-
 from dotenv import load_dotenv, find_dotenv
-
-load_dotenv(find_dotenv())
-SUMMARY_FILE_FOLDER = environ.get("SUMMARY_FILE_FOLDER")
-
+from sqlalchemy import create_engine
+import pandas as pd
 
 from tmc_app import db, make_random_gradient
 
+load_dotenv(find_dotenv())
+SUMMARY_FILE_FOLDER = environ.get("SUMMARY_FILE_FOLDER")
+RAW_DATA_FOLDER = environ.get("RAW_DATA_FOLDER")
+SQLALCHEMY_DATABASE_URI = environ.get("SQLALCHEMY_DATABASE_URI")
 
 class User(UserMixin, db.Model):
     """User account model."""
@@ -152,40 +152,128 @@ class Project(db.Model):
 
     def safe_folder_name(self):
 
+        # TODO make sure number is not first character
+        # TODO learn regex
+
         no_dice = [
-            " ",
-            "'",
-            "`",
-            "~",
-            "!",
-            "@",
-            "#",
-            "$",
-            "%",
-            "^",
-            "&",
-            "*",
-            "(",
-            ")",
-            "[",
-            "]",
-            "{",
-            "}",
-            ";",
-            "=",
-            ",",
-            ".",
-            "/",
-            r"\",
-            "|",
-            "?",
-            "+",
+            " ", "'", "`", "~", "!", "@", "#", "$",
+            "%", "^", "&", "*", "(", ")", "[", "]",
+            "{", "}", ";", "=", ",", ".", "/", r"\\",
+            "|", "?", "+",
         ]
 
         folder = self.name
         for char in no_dice:
-            folder = folder.replace(char, "-")
-        return folder
+            folder = folder.replace(char, "_")
+        return folder.lower()
+
+    def folder_path(self):
+        return Path(RAW_DATA_FOLDER) / self.safe_folder_name()
+
+    def create_project_table(self,
+                             uri: str = SQLALCHEMY_DATABASE_URI,):
+
+        all_dfs = []
+
+        for f in self.files:
+            engine = create_engine(uri)
+            df = pd.read_sql(f"SELECT * FROM data_p{self.uid}_f{f.uid}", engine, index_col="time")
+            engine.dispose()
+            all_dfs.append(df)
+
+        df = pd.concat(all_dfs)
+
+        engine = create_engine(uri)
+        df.to_sql(f"data_merged_p{self.uid}", engine, if_exists="replace")
+        engine.dispose()
+
+    def generate_timeseries_data(self,
+                                 fids_to_include: list = None,
+                                 uri: str = SQLALCHEMY_DATABASE_URI,
+                                 start_time: str = "5:00",
+                                 end_time: str = "20:00",
+                                 modes_to_include: list = ["heavy", "light", "bikes", "peds"]):
+        """
+        This function creates a dataframe that is tailored to plotly.express.bar()
+        """
+
+        if not fids_to_include:
+            fids_to_include = [f.uid for f in self.files]
+
+        fids_to_include = [str(x) for x in fids_to_include]
+
+        engine = create_engine(uri)
+        df_sample = pd.read_sql(f"SELECT * FROM data_merged_p{self.uid} LIMIT 1", uri)
+        engine.dispose()
+
+        q = "SELECT time, CASE WHEN f.title IS NULL THEN f.filename ELSE f.title END AS location, "
+
+        for col in df_sample.columns:
+            if col != 'fid':
+
+                # Confirm it's in the mode list
+                wt = col.split("_")[0]
+                if wt in modes_to_include:
+                    q += f" {col}, "
+
+        q = q[:-2] + f" FROM data_merged_p{self.uid}"
+
+        q += " LEFT JOIN filedata f on f.uid = fid"
+
+        q += f"""
+            WHERE time >= '{start_time}'
+                AND time < '{end_time}'
+                AND fid IN ({", ".join(fids_to_include)}) """
+
+        engine = create_engine(uri)
+        df = pd.read_sql(q, uri, index_col="time")
+        engine.dispose()
+
+        return df
+
+    # def generate_treemap_data(self, df, id_col: str = "location"):
+    #     """
+    #     This function consumes the dataframe from df_timeseries()
+    #     and transforms it to fit the plotly.express.treemap()
+    #     """
+
+    #     df = df.copy()
+
+    #     # Update with a multi-index to include the file id, then remove the fid column
+    #     df.set_index([df[id_col], df.index], inplace=True)
+    #     del df[id_col]
+
+    #     # Stack the dataframe, then reset_index() to explode the multi-index into cols
+    #     df_stacked = pd.DataFrame(
+    #         df.stack(), columns=["total"]
+    #     ).reset_index()
+
+    #     print(df.columns)
+
+    #     # Remove all rows where the total is zero
+    #     df_filtered = df_stacked[df_stacked.total != 0]
+
+    #     print(df.stack())
+
+    #     # Explode the
+    #     attribute_cols = {
+    #         0: "veh_class",
+    #         1: "leg",
+    #         2: "movement"
+    #     }
+    #     df_attrs = df_filtered['level_2'].str.split(
+    #         '_', expand=True
+    #     ).rename(columns=attribute_cols)
+
+    #     df = pd.concat([df_filtered, df_attrs], axis=1, sort=False)
+    #     print(df.columns)
+    #     df["hour"] = [x.hour for x in df["time"]]
+    #     df["minute"] = [":" + str(x.minute) for x in df["time"]]
+
+    #     for col in ["level_2", "time"]:
+    #         del df[col]
+
+    #     return df
 
 
 class TMCFile(db.Model):
@@ -196,9 +284,14 @@ class TMCFile(db.Model):
         db.Integer,
         primary_key=True
     )
-    name = db.Column(
+    filename = db.Column(
         db.Text,
         nullable=False,
+        unique=False
+    )
+    title = db.Column(
+        db.Text,
+        nullable=True,
         unique=False
     )
     project_id = db.Column(
@@ -206,14 +299,39 @@ class TMCFile(db.Model):
         db.ForeignKey("projects.uid"),
         nullable=False
     )
+    model_id = db.Column(
+        db.Integer,
+        nullable=True
+    )
     uploaded_by = db.Column(
         db.Integer,
         db.ForeignKey("userdata.id"),
         nullable=False
     )
+    lat = db.Column(
+        db.Text,
+        nullable=True,
+        unique=False
+    )
+    lng = db.Column(
+        db.Text,
+        nullable=True,
+        unique=False
+    )
+
+    def name(self):
+        if self.title:
+            return self.title
+        else:
+            return self.filename
 
     def upload_user(self):
         return User.query.filter_by(id=self.uploaded_by).first()
+
+    def filepath(self):
+        project = Project.query.filter_by(uid=self.project_id).first()
+
+        return Path(RAW_DATA_FOLDER) / project.safe_folder_name() / self.filename
 
 
 class OutputFile(db.Model):
