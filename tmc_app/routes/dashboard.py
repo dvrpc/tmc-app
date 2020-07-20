@@ -20,7 +20,7 @@ main_bp = Blueprint(
 )
 
 
-@main_bp.route('/my-projects', methods=['GET'])
+@main_bp.route('/projects', methods=['GET'])
 @login_required
 def dashboard():
     """Logged-in User landing page"""
