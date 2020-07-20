@@ -22,7 +22,7 @@ SQLALCHEMY_DATABASE_URI = environ.get("SQLALCHEMY_DATABASE_URI")
 
 parameter_style = {
     "font-family": "'Roboto Mono', monospace",
-    "color": "red",
+    "color": "cyan",
     "font-weight": "bold",
 }
 
@@ -64,6 +64,14 @@ def slider_marks():
     return slider_marks
 
 
+def pad_minute(m):
+    m = str(m)
+    if len(m) == 2:
+        return f":{m}"
+    else:
+        return f":0{m}"
+
+
 def generate_treemap_data(df_timeseries, id_col: str = "location"):
     """
     This function consumes the dataframe from df_timeseries()
@@ -98,8 +106,9 @@ def generate_treemap_data(df_timeseries, id_col: str = "location"):
 
     df = pd.concat([df_filtered, df_attrs], axis=1, sort=False)
     # print(df)
-    df["hour"] = [x.hour for x in df["time"]]
-    df["minute"] = [":" + str(x.minute) for x in df["time"]]
+
+    df["hour"] = [str(x.hour) for x in df["time"]]
+    df["minute"] = [pad_minute(x.minute) for x in df["time"]]
 
     for col in ["level_2", "time"]:
         del df[col]
@@ -120,9 +129,6 @@ def timeseries_figure(df_timeries,
     fig = px.bar(df_timeries, **plot_kwargs)
     # fig.update_layout(margin=figure_margin)
     # fig.layout.plot_bgcolor = "rgba(0,0,0,0)"
-
-    for axis in fig.layout:
-            fig.layout.yaxis.title.font.size = 5
 
     return fig
 
@@ -146,7 +152,7 @@ def create_dashboard(server):
 
     dash_app = dash.Dash(
         server=server,
-        routes_pathname_prefix='/data-viewer/',
+        routes_pathname_prefix='/data-explorer/',
         external_stylesheets=[
                 {'href': 'https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css',
                     'rel': 'stylesheet',
@@ -169,8 +175,12 @@ def create_dashboard(server):
     fid_list = [f.uid for f in active_project.files]
     file_options = [{"label": f.name(), "value": f.uid} for f in active_project.files]
 
-
-    project_options = [{"label": p.name, "value": p.uid} for p in Project.query.all()]
+    project_options = []
+    all_projects = Project.query.all()
+    for project in all_projects:
+        if project.files:
+            project_options.append({"label": project.name,
+                                    "value": project.uid})
 
     # Make a dataframe of the filedata
 
@@ -199,7 +209,7 @@ def create_dashboard(server):
     # Create Layout
     dash_app.layout = html.Div([
         html.Nav([
-            html.A('Exit', className="nav-item nav-link btn btn-outline-primary btn-sm", href='/my-projects'),
+            html.A('Exit', className="nav-item nav-link btn btn-outline-primary btn-sm", href='/projects'),
         ], className="nav navbar"),
         html.Div([
             # Header text with filename and selected start/end times
@@ -228,19 +238,19 @@ def create_dashboard(server):
                     "Analyzing ",
                     html.Span(
                         id="txt-name",
-                        className="p-2 btn btn-sm btn-light mb-2",
+                        className="p-2 btn btn-sm btn-secondary mb-2",
                         style=parameter_style
                     ),
                     " from ",
                     html.Span(
                         id="txt-start",
-                        className="p-2 btn btn-sm btn-light mb-2",
+                        className="p-2 btn btn-sm btn-secondary mb-2",
                         style=parameter_style
                     ),
                     " to ",
                     html.Span(
                         id="txt-end",
-                        className="p-2 btn btn-sm btn-light mb-2",
+                        className="p-2 btn btn-sm btn-secondary mb-2",
                         style=parameter_style
                     ),
                 ], className=""),
@@ -328,7 +338,12 @@ def init_callbacks(dash_app):
             - QAQC text 
         """
 
-        project_options = [{"label": p.name, "value": p.uid} for p in Project.query.all()]
+        project_options = []
+        all_projects = Project.query.all()
+        for project in all_projects:
+            if project.files:
+                project_options.append({"label": project.name,
+                                        "value": project.uid})
 
         # WHEN THE PROJECT SELECTION CHANGES, UPDATE FILE LIST OPTIONS
         # ------------------------------------------------------------
@@ -381,7 +396,7 @@ def init_callbacks(dash_app):
             cols = 3
 
         if not qaqc_txt:
-            qaqc_txt = barplot_height
+            qaqc_txt = ""
 
         kwargs_timeseries = {
             "height": barplot_height,
