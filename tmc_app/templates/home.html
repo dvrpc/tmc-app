@@ -1,111 +1,165 @@
-{% extends "navbar_logged_out.html" %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-{% block content %}
-<div class="container">
-    <div class="row">
-        <div class="col">
-            <h1> T
-                <small class="text-muted">urning</small>
-            </h1>
-            <h1> M
-                <small class="text-muted">ovement</small>
-            </h1>
-            <h1> C
-                <small class="text-muted">ount</small>
-            </h1>
-            <h1> Summarizer</h1>
-        </div>
-        <div class="col">
-            <h5>Log In</h5>
-            <form method="POST" action="/">
-                {{ login_form.csrf_token }}
-      
-                <div class="form-group">
-      
-                  <label for="email">{{ login_form.email.label }}</label>
-                  <input type="email" class="form-control" id="email" name="email" aria-describedby="emailHelp" placeholder="Enter email">
-                    {% if login_form.email.errors %}
-                      <ul class="errors">
-                        {% for error in login_form.email.errors %}
-                          <li>{{ error }}</li>{% endfor %}
-                      </ul>
-                    {% endif %}
-                </div>
-                <div class="form-group">
-                  <label for="password">{{ login_form.password.label }}</label>
-                  <input type="password" class="form-control" id="password" name="password" placeholder="Password">
-                    {% if login_form.password.errors %}
-                      <ul class="errors">
-                        {% for error in login_form.password.errors %}
-                          <li>{{ error }}</li>{% endfor %}
-                      </ul>
-                    {% endif %}
-                </div>
-                <center>
-                  <button type="submit" name="submit" value="login" class="btn btn-primary">Log In</button>
-                </center>
-              </form>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
 
-              <hr>
-              <h5>Sign Up</h5>
-              <form method="POST" action="/">
-                {{ signup_form.csrf_token }}
-      
-                <div class="form-group">
-                  <label for="name">{{ signup_form.name.label }}</label>
-                  <input type="text" class="form-control" id="name" name="name" placeholder="e.g. Rocky Balboa">
-                    {% if signup_form.name.errors %}
-                      <ul class="errors">
-                        {% for error in signup_form.name.errors %}
-                          <li>{{ error }}</li>{% endfor %}
-                      </ul>
-                    {% endif %}
-                    </div>
-                <div class="form-group">
-      
-                  <label for="email">{{ signup_form.email.label }}</label>
-                  <input type="email" class="form-control" id="email" name="email" aria-describedby="emailHelp" placeholder="youremail@address.com">
-                    {% if signup_form.email.errors %}
-                      <ul class="errors">
-                        {% for error in signup_form.email.errors %}
-                          <li>{{ error }}</li>{% endfor %}
-                      </ul>
-                    {% endif %}
-                </div>
-      
-                <div class="form-group">
-                  <label for="password">{{ signup_form.password.label }}</label>
-                  <input type="password" class="form-control" id="password" name="password" placeholder="Create a password">
-                    {% if signup_form.password.errors %}
-                      <ul class="errors">
-                        {% for error in signup_form.password.errors %}
-                          <li>{{ error }}</li>{% endfor %}
-                      </ul>
-                    {% endif %}
-                </div>
-      
-      
-                <div class="form-group">
-                  <label for="confirm">{{ signup_form.confirm.label }}</label>
-                  <input type="password" class="form-control" id="confirm" name="confirm" placeholder="Confirm password">
-                    {% if signup_form.confirm.errors %}
-                      <ul class="errors">
-                        {% for error in signup_form.confirm.errors %}
-                          <li>{{ error }}</li>{% endfor %}
-                      </ul>
-                    {% endif %}
-                </div>
-      
-      
-      
-                <center>
-                  <button type="submit" name="submit" value="signup" class="btn btn-outline-primary">Sign Up</button>
-                </center>
-              </form>
+    <title>TMC Summarizer</title>
+
+    <style>
+      html { 
+        background: url(/static/images/alex-d-alessio-xm9YG6dkHss-unsplash.jpg) no-repeat center center fixed; 
+        -webkit-background-size: cover;
+        -moz-background-size: cover;
+        -o-background-size: cover;
+        background-size: cover;
+      }
+    </style>
+
+
+
+  </head>
+  <body style="background-color: rgba(255,255,255,0)">
+    <div class="container" >
+      <div class="row mt-5" >
+        <div class="col-12 p-4 rounded" style="background: rgba(255,255,255,0.7)">
+          <h1>Turning Movement Count (TMC) Summarizer</h1>
+          <p>This web application allows users to:</p>
+          <ul>
+            <li>create projects</li>
+            <li>import raw TMC data</li>
+            <li>explore TMC data through a variety of interactive visualizations</li>
+            <li>export a summary file that can be linked up with simulation software</li>
+          </ul>
+          <p>
+            Code for this project can be found
+            <a href="https://github.com/dvrpc/tmc-app" target="_blank">on GitHub</a>
+          </p>
         </div>
+      </div>
+
+          <!-- Flashed messages -->
+          <div id="alert-container" class="row">
+            <div class="col-12">
+              {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                <div class=flashes>
+                {% for category, message in messages %}
+                  <div class="alert alert-{{ category }} mt-5 mb-0" role="alert">
+                      {{ message }}
+                      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                      </button>
+                  </div>
+                {% endfor %}
+                </div>
+              {% endif %}
+              {% endwith %}
+            </div>
+          </div>
+
+      <div class="row mt-5" >
+        <div class="col p-4 rounded mr-4" style="background: rgba(255,255,255,0.7)">
+          <h3>Log In</h3>
+          <form method="POST" action="/">
+              {{ login_form.csrf_token }}
+    
+              <div class="form-group">
+    
+                <label for="email">{{ login_form.email.label }}</label>
+                <input type="email" class="form-control" id="email" name="email" aria-describedby="emailHelp" placeholder="Enter email">
+                  {% if login_form.email.errors %}
+                    <ul class="errors">
+                      {% for error in login_form.email.errors %}
+                        <li>{{ error }}</li>{% endfor %}
+                    </ul>
+                  {% endif %}
+              </div>
+              <div class="form-group">
+                <label for="password">{{ login_form.password.label }}</label>
+                <input type="password" class="form-control" id="password" name="password" placeholder="Password">
+                  {% if login_form.password.errors %}
+                    <ul class="errors">
+                      {% for error in login_form.password.errors %}
+                        <li>{{ error }}</li>{% endfor %}
+                    </ul>
+                  {% endif %}
+              </div>
+                <button type="submit" name="submit" value="login" class="btn btn-primary">Log In</button>
+            </form>
+        </div>
+        <div class="col p-4 rounded ml-4" style="background: rgba(255,255,255,0.7)">
+          <h3>Sign Up</h3>
+          <form method="POST" action="/">
+            {{ signup_form.csrf_token }}
+  
+            <div class="form-group">
+              <input type="text" class="form-control" id="name" name="name" placeholder="Choose a User Name">
+                {% if signup_form.name.errors %}
+                  <ul class="errors">
+                    {% for error in signup_form.name.errors %}
+                      <li>{{ error }}</li>{% endfor %}
+                  </ul>
+                {% endif %}
+                </div>
+            <div class="form-group">
+              <input type="email" class="form-control" id="email" name="email" aria-describedby="emailHelp" placeholder="Provide your @dvrpc.org email address">
+                {% if signup_form.email.errors %}
+                  <ul class="errors">
+                    {% for error in signup_form.email.errors %}
+                      <li>{{ error }}</li>{% endfor %}
+                  </ul>
+                {% endif %}
+            </div>
+  
+            <div class="form-group">
+              <input type="password" class="form-control" id="password" name="password" placeholder="Create a password">
+                {% if signup_form.password.errors %}
+                  <ul class="errors">
+                    {% for error in signup_form.password.errors %}
+                      <li>{{ error }}</li>{% endfor %}
+                  </ul>
+                {% endif %}
+            </div>
+  
+  
+            <div class="form-group">
+              <input type="password" class="form-control" id="confirm" name="confirm" placeholder="Confirm password">
+                {% if signup_form.confirm.errors %}
+                  <ul class="errors">
+                    {% for error in signup_form.confirm.errors %}
+                      <li>{{ error }}</li>{% endfor %}
+                  </ul>
+                {% endif %}
+            </div>
+
+            <div class="text-right">
+              <button type="submit" name="submit" value="signup" class="btn btn-outline-primary">Sign Up</button>
+
+            </div>
+  
+  
+  
+          </form>
+
+        </div>
+
+
+      </div>
+
 
     </div>
 
-</div>
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>
 
-{% endblock %}
+
+  </body>
+</html>

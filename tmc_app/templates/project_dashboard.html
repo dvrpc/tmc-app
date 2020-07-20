@@ -1,151 +1,211 @@
-{% extends "navbar_logged_in.html" %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-{% block content %}
-<div class="container">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+
+    <!-- Plotly -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+    integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+    crossorigin=""/>
+
+    <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+    integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+    crossorigin=""></script>
+
+    <title>TMC Summarizer</title>
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="navbar-brand" >TMC Summarizer</div>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+    
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="/logout">Log Out</a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link" href="/rainbows">&#x1F308</a>
+          </li>
+
+          <li class="nav-item active">
+            <a class="nav-link" href="/projects">All Projects <span class="sr-only">(current)</span></a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/data-explorer">Data Explorer</a>
+          </li>
+          
+        </ul>
+      </div>
+    </nav>
+
+    <br>
+
+    <div class="container">
+      <div class="row">
+      <div class="col-sm p-4" style="{{current_user.background}}">
+              <h1>{{ current_user.name }}</h1>
+
+              <ul>
+                  <li>Created {{ current_user.num_projects_created() }} projects</li>
+                  <li>Uploaded X files to  X projects</li>
+              </ul>
+
+          </div>
+          <div class="col mt-4">
+          <h5>
+              Add a Project
+          </h5>
+            <form method="POST" action="/my-projects/add">
+              {{ form.csrf_token }}
+
+              <div class="form-group">
+                <label for="name">{{ form.name.label }}</label>
+                <input type="text" class="form-control" id="name" name="name" >
+                  {% if form.name.errors %}
+                    <ul class="errors">
+                      {% for error in form.name.errors %}
+                        <li>{{ error }}</li>{% endfor %}
+                    </ul>
+                  {% endif %}
+              </div>
+              <div class="form-group">
+                <label for="description">{{ form.description.label }}</label>
+                <input type="text" class="form-control" id="description" name="description" >
+                  {% if form.description.errors %}
+                    <ul class="errors">
+                      {% for error in form.description.errors %}
+                        <li>{{ error }}</li>{% endfor %}
+                    </ul>
+                  {% endif %}
+              </div>
+              <center>
+                <button type="submit" name="submit" value="login" class="btn btn-primary">Add Project</button>
+              </center>
+            </form>
+          </div>
+      </div>
+
+    <!-- Flashed messages -->
+    <div class="row mt-4">
+    <div class="col">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class=flashes>
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+          </div>
+        {% endfor %}
+        </div>
+      {% endif %}
+      {% endwith %}
+    </div>
+    </div>
+
+
+
+    <!-- YOUR projects -->
+    {% if not your_projects %}
     <div class="row">
-    <div class="col-sm p-4" style="{{current_user.background}}">
-            <h1>{{ current_user.name }}</h1>
+    <div class="col">
+      <h5>Welcome to the TMC Summarizer!</h5>
 
-            <ul>
-                <li>Created {{ current_user.num_projects_created() }} projects</li>
-                <li>Uploaded X files to  X projects</li>
-            </ul>
+      <p>
+        Create a new project using the form above.
+      </p>
+      <p>Projects created by others are shown below. You can upload data to and analyze these projects as well.</p>
+      <p>
+        User profiles and projects get a randomly generated "rainbow" as the default color.
+        Some are really nice, some are more mediocre. Feel free to play around with the random generator
+        by <a href="/rainbows">clicking here</a>. This page allows you to update the default colors
+        for your profile or any project.
+      </p>
 
-        </div>
-        <div class="col mt-4">
-        <h5>
-            Add a Project
-        </h5>
-          <form method="POST" action="/my-projects/add">
-            {{ form.csrf_token }}
-  
-            <div class="form-group">
-              <label for="name">{{ form.name.label }}</label>
-              <input type="text" class="form-control" id="name" name="name" >
-                {% if form.name.errors %}
-                  <ul class="errors">
-                    {% for error in form.name.errors %}
-                      <li>{{ error }}</li>{% endfor %}
-                  </ul>
-                {% endif %}
-            </div>
-            <div class="form-group">
-              <label for="description">{{ form.description.label }}</label>
-              <input type="text" class="form-control" id="description" name="description" >
-                {% if form.description.errors %}
-                  <ul class="errors">
-                    {% for error in form.description.errors %}
-                      <li>{{ error }}</li>{% endfor %}
-                  </ul>
-                {% endif %}
-            </div>
-            <center>
-              <button type="submit" name="submit" value="login" class="btn btn-primary">Add Project</button>
-            </center>
-          </form>
-        </div>
+    </div>
     </div>
 
-<!-- Flashed messages -->
-<div class="row mt-4">
-  <div class="col">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      <div class=flashes>
-      {% for category, message in messages %}
-        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
+    {% else %}
+    <div class="row">
+    <div class="col">
+      <h5>Your Projects</h5>
+      <hr>
+    </div>
+    </div>
+
+    <div class="row">
+      <div class="card-columns">
+        {% for project in your_projects %}
+        <div class="card border-white" style="{{ project.background }}">
+          <div class="card-body">
+            <h5 class="card-title">{{ project.name }}</h5>
+            <p>{{project.num_files()}} files</p>
+            <a href="/project/{{project.uid}}" class="btn btn-light btn-sm">Open</a>
+          </div>
         </div>
-      {% endfor %}
+        {% endfor %}
       </div>
+    </div>
     {% endif %}
-    {% endwith %}
-  </div>
-</div>
 
+    <!-- OTHER projects -->
+    {% if not other_projects %}
+    <div class="row">
+    <div class="col">
+      <hr>
+      <h5>
+        Projects created by others will appear here
+      </h5>
+      <hr>
+    </div>
+    </div>
 
+    {% else %}
+    <div class="row mt-4">
+    <div class="col">
+      <h5>Projects created by others</h5>
+      <hr>
+    </div>
+    </div>
 
-
-{% if not your_projects %}
-<div class="row">
-  <div class="col">
-    <h5>Welcome to the TMC Summarizer!</h5>
-
-    <p>
-      Create a new project using the form above.
-    </p>
-    <p>Projects created by others are shown below. You can upload data to and analyze these projects as well.</p>
-    <p>
-      User profiles and projects get a randomly generated "rainbow" as the default color.
-      Some are really nice, some are more mediocre. Feel free to play around with the random generator
-      by <a href="/rainbows">clicking here</a>. This page allows you to update the default colors
-      for your profile or any project.
-    </p>
-  
-  </div>
-</div>
-
-{% else %}
-<div class="row">
-  <div class="col">
-    <h5>Projects created by {{ current_user.name }}</h5>
-    <hr>
-  </div>
-</div>
-<div class="row">
-  {% for project in your_projects %}
-    <div class="col-sm-4">
-      <div class="card border-white mb-4" style="height:12rem;  {{ project.background }}"">
-        <div class="card-body">
-          <h5 class="card-title">{{ project.name }}</h5>
-          <p class="card-text">{{ project.description }}</p>
-          <a href="#" class="btn btn-light btn-sm">Open</a>
+    <div class="row">
+      <div class="card-columns">
+        {% for project in other_projects %}
+        <div class="card border-white" style="{{ project.background }}">
+          <div class="card-body">
+            <h5 class="card-title">{{ project.name }}</h5>
+            <a href="/project/{{project.uid}}" class="btn btn-light btn-sm">Open</a>
+          </div>
         </div>
+        {% endfor %}
       </div>
     </div>
-    {% endfor %}
+    
+    {% endif %}
 
-</div>
-{% endif %}
-
-
-{% if not other_projects %}
-<div class="row">
-  <div class="col">
-    <hr>
-    <h5>
-      Projects created by others will appear here
-    </h5>
-    <hr>
-  </div>
-</div>
-
-{% else %}
-<div class="row">
-  <div class="col">
-    <hr>
-    <h5>Projects created by others</h5>
-    <hr>
-  </div>
-</div>
-<div class="row">
-  {% for project in other_projects %}
-    <div class="col-sm-4">
-      <div class="card border-white mb-4" style="height:12rem;  {{ project.background }}"">
-        <div class="card-body">
-          <h5 class="card-title">{{ project.name }}</h5>
-          <p class="card-text">{{ project.description }}</p>
-          <a href="/project/{{project.uid}}" class="btn btn-light btn-sm">Open</a>
-        </div>
-      </div>
     </div>
-    {% endfor %}
-</div>
-{% endif %}
 
-</div>
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>
 
-{% endblock %}
+
+  </body>
+</html>
