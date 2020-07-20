@@ -231,50 +231,6 @@ class Project(db.Model):
 
         return df
 
-    # def generate_treemap_data(self, df, id_col: str = "location"):
-    #     """
-    #     This function consumes the dataframe from df_timeseries()
-    #     and transforms it to fit the plotly.express.treemap()
-    #     """
-
-    #     df = df.copy()
-
-    #     # Update with a multi-index to include the file id, then remove the fid column
-    #     df.set_index([df[id_col], df.index], inplace=True)
-    #     del df[id_col]
-
-    #     # Stack the dataframe, then reset_index() to explode the multi-index into cols
-    #     df_stacked = pd.DataFrame(
-    #         df.stack(), columns=["total"]
-    #     ).reset_index()
-
-    #     print(df.columns)
-
-    #     # Remove all rows where the total is zero
-    #     df_filtered = df_stacked[df_stacked.total != 0]
-
-    #     print(df.stack())
-
-    #     # Explode the
-    #     attribute_cols = {
-    #         0: "veh_class",
-    #         1: "leg",
-    #         2: "movement"
-    #     }
-    #     df_attrs = df_filtered['level_2'].str.split(
-    #         '_', expand=True
-    #     ).rename(columns=attribute_cols)
-
-    #     df = pd.concat([df_filtered, df_attrs], axis=1, sort=False)
-    #     print(df.columns)
-    #     df["hour"] = [x.hour for x in df["time"]]
-    #     df["minute"] = [":" + str(x.minute) for x in df["time"]]
-
-    #     for col in ["level_2", "time"]:
-    #         del df[col]
-
-    #     return df
-
 
 class TMCFile(db.Model):
 
@@ -318,6 +274,27 @@ class TMCFile(db.Model):
         nullable=True,
         unique=False
     )
+    data_date = db.Column(
+        db.DateTime,
+        index=False,
+        unique=False,
+        nullable=True
+    )
+    legs = db.Column(
+        db.Text,
+        nullable=True,
+        unique=False
+    )
+    start_time = db.Column(
+        db.Text,
+        nullable=True,
+        unique=False
+    )
+    end_time = db.Column(
+        db.Text,
+        nullable=True,
+        unique=False
+    )
 
     def name(self):
         if self.title:
@@ -332,6 +309,53 @@ class TMCFile(db.Model):
         project = Project.query.filter_by(uid=self.project_id).first()
 
         return Path(RAW_DATA_FOLDER) / project.safe_folder_name() / self.filename
+
+    def extract_metadata(self):
+        location_kwargs = {
+            "sheet_name": "Information",
+            "header": None,
+            "usecols": "A:B",
+            "names": ["place_type", "place_name"]
+        }
+
+        df_location = pd.read_excel(self.filepath(), **location_kwargs).dropna()
+
+        location_kwargs["usecols"] = "D:E"
+        location_kwargs["names"] = ["time_type", "time_value"]
+
+        df_time = pd.read_excel(self.filepath(), **location_kwargs).dropna()
+
+        data_date = None
+        start_time = ""
+        end_time = ""
+        location_name = ""
+        legs = {}
+
+        # Get the location_name and leg names
+        for _, row in df_location.iterrows():
+
+            if row.place_type == "Intersection Name":
+                location_name = row.place_name
+            else:
+                legs[row.place_type.lower()] = row.place_name
+
+        # Get the date and start/end times
+        for _, row in df_time.iterrows():
+
+            if row.time_type == "Date":
+                data_date = row.time_value
+            elif row.time_type == "Start Time":
+                start_time = row.time_value
+            elif row.time_type == "End Time":
+                end_time = row.time_value
+
+        return {
+            "location_name": location_name,
+            "legs": legs,
+            "data_date": data_date,
+            "start_time": start_time,
+            "end_time": end_time,
+        }
 
 
 class OutputFile(db.Model):
