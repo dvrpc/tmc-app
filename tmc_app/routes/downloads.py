@@ -4,20 +4,19 @@ from flask_login import login_required
 import zipfile
 from os import environ
 from tmc_app import db
-
 from datetime import datetime
-
 from dotenv import load_dotenv, find_dotenv
-
-load_dotenv(find_dotenv())
-SUMMARY_FILE_FOLDER = environ.get("SUMMARY_FILE_FOLDER")
-RAW_DATA_FOLDER = environ.get("RAW_DATA_FOLDER")
 
 from tmc_app.models import (
     OutputFile,
     TMCFile,
     Project
 )
+
+load_dotenv(find_dotenv())
+SUMMARY_FILE_FOLDER = environ.get("SUMMARY_FILE_FOLDER")
+RAW_DATA_FOLDER = environ.get("RAW_DATA_FOLDER")
+
 
 # Blueprint Configuration
 download_bp = Blueprint(
