@@ -75,14 +75,11 @@ def create_app():
         from tmc_app.routes import downloads
         app.register_blueprint(downloads.download_bp)
 
-        from tmc_app.data_viz.dash_app import create_dashboard
-        app = create_dashboard(app)
-
-        # from my_stuff.routes import containers
-        # app.register_blueprint(containers.container_bp)
-
         # Create Database Models
         db.create_all()
+
+        from tmc_app.data_viz.dash_app import create_dashboard
+        app = create_dashboard(app)
 
         # # Compile static assets
         # if app.config['FLASK_ENV'] == 'development':
