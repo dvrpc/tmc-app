@@ -146,7 +146,7 @@ def upload_file(project_id):
                 tmc_uploader = SQLUpload(project_id, tmc_file.uid, filepath)
                 tmc_uploader.publish_to_database()
 
-                flash(f"Saved {f.filename}", "success")
+            flash(f"Saved {len(file_list)} files to server", "success")
 
 
             # After importing all files, recreate the project table
