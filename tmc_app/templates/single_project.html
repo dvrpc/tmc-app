@@ -98,7 +98,7 @@
           <div class="col p-0 rounded">
             <div id="mapid" style="height: 100%" class="pr-0">
               <script>
-                var mymap = L.map('mapid').setView([39.952297, -75.163743], 12);
+                var mymap = L.map('mapid').setView([39.952297, -75.163743], 10);
   
                 L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
                       maxZoom: 18,
@@ -107,21 +107,21 @@
                       zoomOffset: -1,
                       accessToken: 'pk.eyJ1IjoiYWFyb25kdnJwYyIsImEiOiJja2NvN2s5dnAwaWR2MnptbzFwYmd2czVvIn0.Fcc34gzGME_zHR5q4RnSOg'
                   }).addTo(mymap);
-  
-                  var popup = L.popup();
-  
-                  function onMapClick(e) {
-                      popup
-                          .setLatLng(e.latlng)
-                          .setContent("You clicked the map at " + e.latlng.toString())
-                          .openOn(mymap);
-                      var xhttp = new XMLHttpRequest();
-                      xhttp.open("POST", "/geocode", true);
-                      xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-                      xhttp.send("project_id=1&file_id=215&latlng=");
+
+                  var data = {{latlngs | safe}}
+
+                  var marker_list = [];
+
+                  for (var i = 0; i < data.length; i++) {
+                    marker = new L.marker([data[i][0], data[i][1]])
+                      .bindPopup(data[i][2])
+                      .addTo(mymap);
+                      marker_list.push(marker)
                   }
-  
-                  mymap.on('click', onMapClick);
+
+                  mymap.fitBounds(marker_list.getBounds());
+
+
               </script>
   
             </div>
@@ -181,7 +181,9 @@
                   <thead>
                     <tr>
                       <th scope="col"></th>
+                      <th scope="col">Model ID</th>
                       <th scope="col">Name</th>
+                      <th scope="col">Metadata</th>
                       <th scope="col">Uploaded By</th>
                       <th scope="col"></th>
                       
@@ -198,16 +200,24 @@
                             </svg>
                           </a>
                         </td>
+                        <td>{{file.model_id }}</td>
                         <td>{{file.name() }}</td>
-                          <td>{{file.upload_user().name}}</td>
-                          <td>
-                            <a href="{{request.path}}/delete/{{file.uid}}" class="danger">
-                              <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-trash" fill="red" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
-                                <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4L4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
-                              </svg>
-                            </a>
-                          </td>
+                        <td>
+                          <a href="{{request.path}}/metadata/{{file.uid}}">
+                            <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-info-square-fill" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                              <path fill-rule="evenodd" d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm8.93 4.588l-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM8 5.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+                            </svg>
+                          </a>
+                        </td>
+                        <td>{{file.upload_user().name}}</td>
+                        <td>
+                          <a href="{{request.path}}/delete/{{file.uid}}" class="danger">
+                            <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-trash" fill="red" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                              <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4L4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                            </svg>
+                          </a>
+                        </td>
                       </tr>
                       {% endfor %}
   
