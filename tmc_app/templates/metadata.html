@@ -84,7 +84,7 @@
 
 
     <div class="row p-4">
-      <div clas="col-12 p-5">
+      <div clas="col p-5">
         <h3>
           Edit metadata
         </h3>
@@ -144,7 +144,7 @@
 
 
       </div>
-      <div class="col-6">
+      <div class="col">
         <div id="map"></div>
         <script>
 
@@ -157,7 +157,7 @@
                         id: 'mapbox/streets-v11',
                         tileSize: 512,
                         zoomOffset: -1,
-                        accessToken: 'pk.eyJ1IjoiYWFyb25kdnJwYyIsImEiOiJja2NvN2s5dnAwaWR2MnptbzFwYmd2czVvIn0.Fcc34gzGME_zHR5q4RnSOg'
+                        accessToken: '{{MAPBOX_TOKEN}}'
                     }).addTo(mymap);
 
           marker = new L.marker(latlng)

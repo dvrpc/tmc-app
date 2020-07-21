@@ -32,13 +32,19 @@
     
       <div class="collapse navbar-collapse" id="navbarSupportedContent">
         <ul class="navbar-nav mr-auto">
-          <li class="nav-item">
-            <a class="nav-link" href="/logout">Log Out</a>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-gear" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" d="M8.837 1.626c-.246-.835-1.428-.835-1.674 0l-.094.319A1.873 1.873 0 0 1 4.377 3.06l-.292-.16c-.764-.415-1.6.42-1.184 1.185l.159.292a1.873 1.873 0 0 1-1.115 2.692l-.319.094c-.835.246-.835 1.428 0 1.674l.319.094a1.873 1.873 0 0 1 1.115 2.693l-.16.291c-.415.764.42 1.6 1.185 1.184l.292-.159a1.873 1.873 0 0 1 2.692 1.116l.094.318c.246.835 1.428.835 1.674 0l.094-.319a1.873 1.873 0 0 1 2.693-1.115l.291.16c.764.415 1.6-.42 1.184-1.185l-.159-.291a1.873 1.873 0 0 1 1.116-2.693l.318-.094c.835-.246.835-1.428 0-1.674l-.319-.094a1.873 1.873 0 0 1-1.115-2.692l.16-.292c.415-.764-.42-1.6-1.185-1.184l-.291.159A1.873 1.873 0 0 1 8.93 1.945l-.094-.319zm-2.633-.283c.527-1.79 3.065-1.79 3.592 0l.094.319a.873.873 0 0 0 1.255.52l.292-.16c1.64-.892 3.434.901 2.54 2.541l-.159.292a.873.873 0 0 0 .52 1.255l.319.094c1.79.527 1.79 3.065 0 3.592l-.319.094a.873.873 0 0 0-.52 1.255l.16.292c.893 1.64-.902 3.434-2.541 2.54l-.292-.159a.873.873 0 0 0-1.255.52l-.094.319c-.527 1.79-3.065 1.79-3.592 0l-.094-.319a.873.873 0 0 0-1.255-.52l-.292.16c-1.64.893-3.433-.902-2.54-2.541l.159-.292a.873.873 0 0 0-.52-1.255l-.319-.094c-1.79-.527-1.79-3.065 0-3.592l.319-.094a.873.873 0 0 0 .52-1.255l-.16-.292c-.892-1.64.902-3.433 2.541-2.54l.292.159a.873.873 0 0 0 1.255-.52l.094-.319z"/>
+                <path fill-rule="evenodd" d="M8 5.754a2.246 2.246 0 1 0 0 4.492 2.246 2.246 0 0 0 0-4.492zM4.754 8a3.246 3.246 0 1 1 6.492 0 3.246 3.246 0 0 1-6.492 0z"/>
+              </svg>
+            </a>
+            <div class="dropdown-menu bg-dark" aria-labelledby="navbarDropdown">
+              <a class="nav-link" href="/logout">Log Out</a>
+              <a class="nav-link" href="/rainbows">&#x1F308</a>
+            </div>
           </li>
 
-          <li class="nav-item">
-            <a class="nav-link" href="/rainbows">&#x1F308</a>
-          </li>
           <li class="nav-item">
             <a class="nav-link" href="/data-explorer">Data Explorer</a>
           </li>
@@ -49,9 +55,9 @@
             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
               Your Projects
             </a>
-            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+            <div class="dropdown-menu bg-dark navbar-dark" aria-labelledby="navbarDropdown">
               {% for project in current_user.projects_created() %}
-                <a class="dropdown-item" href="/project/{{project.uid}}">{{project.name}}</a>
+                <a class="nav-link" href="/project/{{project.uid}}">{{project.name}}</a>
               {% endfor %}
             </div>
           </li>
@@ -61,6 +67,7 @@
         </ul>
       </div>
     </nav>
+
 
     <br>
 
@@ -89,8 +96,6 @@
               <div class="text-right mt-4">
                 <a class="btn btn-success btn-bg mt-2" href="/data-explorer" role="button">Explore Data</a>
                 <br>
-                <a class="btn btn-secondary btn-bg mt-2" href="{{request.path}}/metadata" role="button">Add Metadata</a>
-                <br>
                 <a class="btn btn-secondary btn-bg mt-2" href="{{request.path}}/summarize" role="button">Summarize into Excel File</a>
               </div>
   
@@ -110,16 +115,17 @@
 
                   var data = {{latlngs | safe}}
 
-                  var marker_list = [];
+                  var all_pins = L.featureGroup().addTo(mymap);
 
                   for (var i = 0; i < data.length; i++) {
                     marker = new L.marker([data[i][0], data[i][1]])
                       .bindPopup(data[i][2])
                       .addTo(mymap);
-                      marker_list.push(marker)
+                      // marker_list.push(marker)
+                      all_pins.addLayer(marker);
                   }
 
-                  mymap.fitBounds(marker_list.getBounds());
+                  mymap.fitBounds(all_pins.getBounds());
 
 
               </script>
@@ -181,9 +187,9 @@
                   <thead>
                     <tr>
                       <th scope="col"></th>
+                      <th scope="col">Update</th>
                       <th scope="col">Model ID</th>
                       <th scope="col">Name</th>
-                      <th scope="col">Metadata</th>
                       <th scope="col">Uploaded By</th>
                       <th scope="col"></th>
                       
@@ -200,15 +206,17 @@
                             </svg>
                           </a>
                         </td>
-                        <td>{{file.model_id }}</td>
-                        <td>{{file.name() }}</td>
                         <td>
                           <a href="{{request.path}}/metadata/{{file.uid}}">
-                            <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-info-square-fill" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                              <path fill-rule="evenodd" d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm8.93 4.588l-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM8 5.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+                            <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-geo" fill="{{file.metadata_style()}}" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M11 4a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
+                              <path d="M7.5 4h1v9a.5.5 0 0 1-1 0V4z"/>
+                              <path fill-rule="evenodd" d="M6.489 12.095a.5.5 0 0 1-.383.594c-.565.123-1.003.292-1.286.472-.302.192-.32.321-.32.339 0 .013.005.085.146.21.14.124.372.26.701.382.655.246 1.593.408 2.653.408s1.998-.162 2.653-.408c.329-.123.56-.258.701-.382.14-.125.146-.197.146-.21 0-.018-.018-.147-.32-.339-.283-.18-.721-.35-1.286-.472a.5.5 0 1 1 .212-.977c.63.137 1.193.34 1.61.606.4.253.784.645.784 1.182 0 .402-.219.724-.483.958-.264.235-.618.423-1.013.57-.793.298-1.855.472-3.004.472s-2.21-.174-3.004-.471c-.395-.148-.749-.336-1.013-.571-.264-.234-.483-.556-.483-.958 0-.537.384-.929.783-1.182.418-.266.98-.47 1.611-.606a.5.5 0 0 1 .595.383z"/>
                             </svg>
                           </a>
                         </td>
+                        <td>{{file.model_id }}</td>
+                        <td>{{file.name() }}</td>
                         <td>{{file.upload_user().name}}</td>
                         <td>
                           <a href="{{request.path}}/delete/{{file.uid}}" class="danger">
