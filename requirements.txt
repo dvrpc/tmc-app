@@ -1,4 +1,5 @@
 flask
+uwsgi
 flake8
 pandas
 geopandas
@@ -12,4 +13,3 @@ psycopg2-binary
 flask-wtf
 email_validator
 dash
-git+https://github.com/dvrpc/tmc-summarizer.git
