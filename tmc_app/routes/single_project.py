@@ -28,7 +28,7 @@ from tmc_app.models import (
 
 
 from tmc_app.forms.upload_forms import UploadFilesForm
-
+from tmc_app.forms.metadata_forms import UpdateMetadataForm
 
 load_dotenv(find_dotenv())
 SQLALCHEMY_DATABASE_URI = environ.get("SQLALCHEMY_DATABASE_URI")
@@ -86,6 +86,9 @@ def single_project(project_id):
 
     graphJSON = json.dumps(data, cls=plotly.utils.PlotlyJSONEncoder)
 
+    # Get lat lngs if they exist
+    latlng_data = [[f.lat, f.lng, f.name()] for f in project.files if f.lat]
+
     return render_template(
         'single_project.html',
         make_random_gradient=make_random_gradient,
@@ -94,7 +97,8 @@ def single_project(project_id):
         form=form,
         summary_files=summary_files,
         fig=graphJSON,
-        graph_title=plot_title
+        graph_title=plot_title,
+        latlngs=json.dumps(latlng_data)
     )
 
 
@@ -145,6 +149,17 @@ def upload_file(project_id):
                 # Import the data into SQL
                 tmc_uploader = SQLUpload(project_id, tmc_file.uid, filepath)
                 tmc_uploader.publish_to_database()
+
+                # Extract the metadata from the Excel file
+                metadata = tmc_file.extract_metadata()
+
+                tmc_file.title = metadata["title"]
+                tmc_file.legs = str(metadata["legs"])
+                tmc_file.data_date = metadata["data_date"]
+                tmc_file.start_time = metadata["start_time"]
+                tmc_file.end_time = metadata["end_time"]
+
+                db.session.commit()
 
             flash(f"Saved {len(file_list)} files to server", "success")
 
@@ -215,3 +230,60 @@ def summarize_files(project_id):
 
     return redirect(url_for('project_bp.single_project', project_id=project_id))
 
+
+@project_bp.route('/project/<project_id>/metadata/<file_id>', methods=['GET'])
+@login_required
+def metadata(project_id, file_id):
+
+    project = Project.query.filter_by(
+        uid=project_id
+    ).first()
+
+
+    this_file = TMCFile.query.filter_by(
+        uid=file_id,
+        project_id=project_id
+    ).first()
+
+    if this_file.lat:
+        latlng = [this_file.lat, this_file.lng]
+    else:
+        latlng = [39.952297, -75.163743]
+
+    form = UpdateMetadataForm()
+
+    return render_template(
+        'metadata.html',
+        this_file=this_file,
+        project=project,
+        form=form,
+        latlng=json.dumps(latlng)
+    )
+
+
+@project_bp.route('/project/<project_id>/metadata/<file_id>/update', methods=['POST'])
+@login_required
+def update_metadata(project_id, file_id):
+
+    this_file = TMCFile.query.filter_by(
+        uid=file_id,
+        project_id=project_id
+    ).first()
+
+    form = UpdateMetadataForm()
+
+
+    this_file.title = str(form.title.data)
+    if form.model_id.data:
+        if type(form.model_id.data) == int:
+            this_file.model_id = int(form.model_id.data)
+
+    this_file.lat = str(form.lat.data)
+    this_file.lng = str(form.lng.data)
+    this_file.legs = str(form.legs.data)
+
+    db.session.commit()
+
+    flash(f"Updated metadata for {this_file.name()}", "success")
+
+    return redirect(url_for('project_bp.single_project', project_id=project_id))
