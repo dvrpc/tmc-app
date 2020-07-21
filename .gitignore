@@ -7,3 +7,12 @@ flask_user_data/
 .env
 
 .DS_Store
+
+
+data/
+
+data-outputs/
+
+cache-directory/
+
+*.ipynb

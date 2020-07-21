@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+
+    <!-- Plotly -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+    integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+    crossorigin=""/>
+
+    <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+    integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+    crossorigin=""></script>
+
+    <title>TMC Summarizer</title>
+  </head>
+  <body style="{{ project.background }} height: 100vh; background-repeat: no-repeat;background-attachment: fixed;">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="navbar-brand" >TMC Summarizer</div>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+    
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-gear" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" d="M8.837 1.626c-.246-.835-1.428-.835-1.674 0l-.094.319A1.873 1.873 0 0 1 4.377 3.06l-.292-.16c-.764-.415-1.6.42-1.184 1.185l.159.292a1.873 1.873 0 0 1-1.115 2.692l-.319.094c-.835.246-.835 1.428 0 1.674l.319.094a1.873 1.873 0 0 1 1.115 2.693l-.16.291c-.415.764.42 1.6 1.185 1.184l.292-.159a1.873 1.873 0 0 1 2.692 1.116l.094.318c.246.835 1.428.835 1.674 0l.094-.319a1.873 1.873 0 0 1 2.693-1.115l.291.16c.764.415 1.6-.42 1.184-1.185l-.159-.291a1.873 1.873 0 0 1 1.116-2.693l.318-.094c.835-.246.835-1.428 0-1.674l-.319-.094a1.873 1.873 0 0 1-1.115-2.692l.16-.292c.415-.764-.42-1.6-1.185-1.184l-.291.159A1.873 1.873 0 0 1 8.93 1.945l-.094-.319zm-2.633-.283c.527-1.79 3.065-1.79 3.592 0l.094.319a.873.873 0 0 0 1.255.52l.292-.16c1.64-.892 3.434.901 2.54 2.541l-.159.292a.873.873 0 0 0 .52 1.255l.319.094c1.79.527 1.79 3.065 0 3.592l-.319.094a.873.873 0 0 0-.52 1.255l.16.292c.893 1.64-.902 3.434-2.541 2.54l-.292-.159a.873.873 0 0 0-1.255.52l-.094.319c-.527 1.79-3.065 1.79-3.592 0l-.094-.319a.873.873 0 0 0-1.255-.52l-.292.16c-1.64.893-3.433-.902-2.54-2.541l.159-.292a.873.873 0 0 0-.52-1.255l-.319-.094c-1.79-.527-1.79-3.065 0-3.592l.319-.094a.873.873 0 0 0 .52-1.255l-.16-.292c-.892-1.64.902-3.433 2.541-2.54l.292.159a.873.873 0 0 0 1.255-.52l.094-.319z"/>
+                <path fill-rule="evenodd" d="M8 5.754a2.246 2.246 0 1 0 0 4.492 2.246 2.246 0 0 0 0-4.492zM4.754 8a3.246 3.246 0 1 1 6.492 0 3.246 3.246 0 0 1-6.492 0z"/>
+              </svg>
+            </a>
+            <div class="dropdown-menu bg-dark" aria-labelledby="navbarDropdown">
+              <a class="nav-link" href="/logout">Log Out</a>
+              <a class="nav-link" href="/rainbows">&#x1F308</a>
+            </div>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link" href="/data-explorer">Data Explorer</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/projects">All Projects</a>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              Your Projects
+            </a>
+            <div class="dropdown-menu bg-dark navbar-dark" aria-labelledby="navbarDropdown">
+              {% for project in current_user.projects_created() %}
+                <a class="nav-link" href="/project/{{project.uid}}">{{project.name}}</a>
+              {% endfor %}
+            </div>
+          </li>
+          <li class="nav-item active">
+            <a class="nav-link" href="/project/{{project.uid}}">{{project.name}}<span class="sr-only">(current)</span></a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+
+    <br>
+
+    <div class="container">
+      <div class="row">
+          <div class="col p-4 rounded mr-2" style="background: rgba(255,255,255,0.7)">
+              <h1>
+                  {{ project.name }}
+              </h1>
+              <p>
+                  {{ project.description }}
+              </p>
+  
+            <div>
+              <form method="post" action="{{request.path}}/save-raw-data" enctype="multipart/form-data">
+  
+                {{form.csrf_token }}
+                <div class="custom-file">
+                    <input type="file" class="custom-file-input" id="files" name="files" multiple>
+                    <label class="custom-file-label" for="customFile">Select one or more files</label>
+                  </div>
+    
+                <button type="submit" class="btn btn-primary mt-2">Upload</button>
+              </form>
+            </div>
+              <div class="text-right mt-4">
+                <a class="btn btn-success btn-bg mt-2" href="/data-explorer" role="button">Explore Data</a>
+                <br>
+                <a class="btn btn-secondary btn-bg mt-2" href="{{request.path}}/summarize" role="button">Summarize into Excel File</a>
+              </div>
+  
+            </div>
+          <div class="col p-0 rounded">
+            <div id="mapid" style="height: 100%" class="pr-0">
+              <script>
+                var mymap = L.map('mapid').setView([39.952297, -75.163743], 10);
+  
+                L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+                      maxZoom: 18,
+                      id: 'mapbox/streets-v11',
+                      tileSize: 512,
+                      zoomOffset: -1,
+                      accessToken: 'pk.eyJ1IjoiYWFyb25kdnJwYyIsImEiOiJja2NvN2s5dnAwaWR2MnptbzFwYmd2czVvIn0.Fcc34gzGME_zHR5q4RnSOg'
+                  }).addTo(mymap);
+
+                  var data = {{latlngs | safe}}
+
+                  var all_pins = L.featureGroup().addTo(mymap);
+
+                  for (var i = 0; i < data.length; i++) {
+                    marker = new L.marker([data[i][0], data[i][1]])
+                      .bindPopup(data[i][2])
+                      .addTo(mymap);
+                      // marker_list.push(marker)
+                      all_pins.addLayer(marker);
+                  }
+
+                  mymap.fitBounds(all_pins.getBounds());
+
+
+              </script>
+  
+            </div>
+  
+          </div>
+      
+      </div>
+
+  <!-- Flashed messages -->
+  <div id="alert-container" class="row">
+      <div class="col">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class=flashes>
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} mt-2 mb-0" role="alert">
+                {{ message }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+          {% endfor %}
+          </div>
+        {% endif %}
+        {% endwith %}
+      </div>
+    </div>
+  
+    <!-- GRAPH of all data -->
+    <div class="row rounded mt-2" style="background: rgba(255,255,255,0.7)">
+      <div class="col-12">
+        <div class="chart" id="bargraph">
+          <script>
+            var graphs = {{ fig | safe}};
+            var layout = {
+                title: '{{ graph_title }}',
+                barmode: 'stack',
+                // showlegend: false,
+                height: 300,
+                paper_bgcolor: "rgba(0,0,0,0)",
+                plot_bgcolor: "rgba(0,0,0,0)",
+                yaxis: {gridcolor: "rgba(0,0,0,0.1)"}
+            };
+            Plotly.plot('bargraph',graphs,layout);
+          </script>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table of raw TMC files -->
+      <div class="row mt-2 p-4 rounded" style="background: rgba(255,255,255,0.7)">
+          <div class="col">
+              <h5>
+                  Raw TMC Data
+              </h5>
+              <table class="table">
+                  <thead>
+                    <tr>
+                      <th scope="col"></th>
+                      <th scope="col">Update</th>
+                      <th scope="col">Model ID</th>
+                      <th scope="col">Name</th>
+                      <th scope="col">Uploaded By</th>
+                      <th scope="col"></th>
+                      
+                    </tr>
+                  </thead>
+                  <tbody>
+                      {% for file in files %}
+                      <tr>
+                        <td>
+                          <a href="/download/raw-tmc/{{file.uid}}" role="button">
+                            <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-cloud-download" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                              <path fill-rule="evenodd" d="M4.406 1.342A5.53 5.53 0 0 1 8 0c2.69 0 4.923 2 5.166 4.579C14.758 4.804 16 6.137 16 7.773 16 9.569 14.502 11 12.687 11H10a.5.5 0 0 1 0-1h2.688C13.979 10 15 8.988 15 7.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 2.825 10.328 1 8 1a4.53 4.53 0 0 0-2.941 1.1c-.757.652-1.153 1.438-1.153 2.055v.448l-.445.049C2.064 4.805 1 5.952 1 7.318 1 8.785 2.23 10 3.781 10H6a.5.5 0 0 1 0 1H3.781C1.708 11 0 9.366 0 7.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383z"/>
+                              <path fill-rule="evenodd" d="M7.646 15.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 14.293V5.5a.5.5 0 0 0-1 0v8.793l-2.146-2.147a.5.5 0 0 0-.708.708l3 3z"/>
+                            </svg>
+                          </a>
+                        </td>
+                        <td>
+                          <a href="{{request.path}}/metadata/{{file.uid}}">
+                            <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-geo" fill="{{file.metadata_style()}}" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M11 4a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
+                              <path d="M7.5 4h1v9a.5.5 0 0 1-1 0V4z"/>
+                              <path fill-rule="evenodd" d="M6.489 12.095a.5.5 0 0 1-.383.594c-.565.123-1.003.292-1.286.472-.302.192-.32.321-.32.339 0 .013.005.085.146.21.14.124.372.26.701.382.655.246 1.593.408 2.653.408s1.998-.162 2.653-.408c.329-.123.56-.258.701-.382.14-.125.146-.197.146-.21 0-.018-.018-.147-.32-.339-.283-.18-.721-.35-1.286-.472a.5.5 0 1 1 .212-.977c.63.137 1.193.34 1.61.606.4.253.784.645.784 1.182 0 .402-.219.724-.483.958-.264.235-.618.423-1.013.57-.793.298-1.855.472-3.004.472s-2.21-.174-3.004-.471c-.395-.148-.749-.336-1.013-.571-.264-.234-.483-.556-.483-.958 0-.537.384-.929.783-1.182.418-.266.98-.47 1.611-.606a.5.5 0 0 1 .595.383z"/>
+                            </svg>
+                          </a>
+                        </td>
+                        <td>{{file.model_id }}</td>
+                        <td>{{file.name() }}</td>
+                        <td>{{file.upload_user().name}}</td>
+                        <td>
+                          <a href="{{request.path}}/delete/{{file.uid}}" class="danger">
+                            <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-trash" fill="red" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                              <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4L4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                            </svg>
+                          </a>
+                        </td>
+                      </tr>
+                      {% endfor %}
+  
+                  </tbody>
+                </table>
+          </div>
+  
+      </div>
+  
+      <!-- Table of output files -->
+      <div class="row mt-2 p-4 rounded" style="background: rgba(255,255,255,0.7)">
+        <div class="col">
+            <h5>
+                Output Files
+            </h5>
+            <table class="table">
+                <thead>
+                  <tr>
+                    <th scope="col"></th>     
+                    <th scope="col">Name</th>
+                    <th scope="col">Created By</th>
+                    <th scope="col">Created On</th>
+                    <th scope="col"></th>
+                    
+                    
+                  </tr>
+                </thead>
+                <tbody>
+                    {% for file in summary_files %}
+                    <tr>
+                        <td>
+                          <a href="/download/output/{{file.uid}}" role="button">
+                            <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-cloud-download" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                              <path fill-rule="evenodd" d="M4.406 1.342A5.53 5.53 0 0 1 8 0c2.69 0 4.923 2 5.166 4.579C14.758 4.804 16 6.137 16 7.773 16 9.569 14.502 11 12.687 11H10a.5.5 0 0 1 0-1h2.688C13.979 10 15 8.988 15 7.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 2.825 10.328 1 8 1a4.53 4.53 0 0 0-2.941 1.1c-.757.652-1.153 1.438-1.153 2.055v.448l-.445.049C2.064 4.805 1 5.952 1 7.318 1 8.785 2.23 10 3.781 10H6a.5.5 0 0 1 0 1H3.781C1.708 11 0 9.366 0 7.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383z"/>
+                              <path fill-rule="evenodd" d="M7.646 15.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 14.293V5.5a.5.5 0 0 0-1 0v8.793l-2.146-2.147a.5.5 0 0 0-.708.708l3 3z"/>
+                            </svg>
+                          </a>
+                        </td>
+                        <td>
+                          {{file.filename}}
+                      </td>
+  
+                        <td>{{file.created_user().name}}</td>
+                        <td>{{file.fancy_create_date()}}</td>
+                        <td>
+                          <a href="{{request.path}}/delete/output/{{file.uid}}">
+                            <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-trash" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                              <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4L4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                            </svg>
+                          </a>
+                        </td>
+  
+                    </tr>
+                    {% endfor %}
+  
+                </tbody>
+              </table>
+        </div>
+  
+    </div>
+  </div>
+  
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>
+
+
+  </body>
+</html>
