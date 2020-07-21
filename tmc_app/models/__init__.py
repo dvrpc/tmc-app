@@ -350,7 +350,7 @@ class TMCFile(db.Model):
                 end_time = row.time_value
 
         return {
-            "location_name": location_name,
+            "title": location_name,
             "legs": legs,
             "data_date": data_date,
             "start_time": start_time,
