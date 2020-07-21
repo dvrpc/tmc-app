@@ -27,6 +27,7 @@ from tmc_app.forms.metadata_forms import UpdateMetadataForm
 load_dotenv(find_dotenv())
 SQLALCHEMY_DATABASE_URI = environ.get("SQLALCHEMY_DATABASE_URI")
 MAPBOX_TOKEN = environ.get("MAPBOX_TOKEN")
+RAW_DATA_FOLDER = environ.get("RAW_DATA_FOLDER")
 
 
 # Blueprint Configuration
@@ -98,16 +99,6 @@ def single_project(project_id):
     )
 
 
-@project_bp.route('/geocode', methods=['POST'])
-@login_required
-def geocode_file():
-    """ TODO!"""
-
-    # flash("made it through", "info")
-
-    return redirect("/my-projects")
-
-
 @project_bp.route('/project/<project_id>/save-raw-data', methods=['POST'])
 @login_required
 def upload_file(project_id):
@@ -121,7 +112,7 @@ def upload_file(project_id):
         project = Project.query.filter_by(uid=project_id).first()
 
         # Make a path to a subfolder for this session's uploads
-        data_path = Path("data") / project.safe_folder_name()
+        data_path = Path(RAW_DATA_FOLDER) / project.safe_folder_name()
 
         if not data_path.exists():
             data_path.mkdir(parents=True)
@@ -133,6 +124,7 @@ def upload_file(project_id):
             for f in file_list:
                 filepath = data_path / secure_filename(f.filename)
                 f.save(filepath)
+                print("Saved", filepath)
 
                 tmc_file = TMCFile(
                     filename=f.filename,
