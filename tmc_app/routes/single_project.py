@@ -1,30 +1,24 @@
-from pathlib import Path
+# Environment variables
+from os import environ
+from dotenv import load_dotenv, find_dotenv
+
+# Flask stuff
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
-import pandas as pd
-import sqlalchemy
-import plotly.graph_objects as go
+
+# General helpers
+from pathlib import Path
+
+# Plotting
 import json
 import plotly
+import plotly.graph_objects as go
 
-from dotenv import load_dotenv, find_dotenv
-from os import environ
-
-
-# from tmc_summarizer import write_summary_file
-# from tmc_summarizer import TMC_File as RawTMCFile
-
-from tmc_app.models.upload_model import SQLUpload
-
+# Project imports
 from tmc_app import make_random_gradient, db
-
-from tmc_app.models import (
-    User,
-    Project,
-    TMCFile,
-    OutputFile
-)
+from tmc_app.models.upload_model import SQLUpload
+from tmc_app.models import Project, TMCFile, OutputFile
 
 
 from tmc_app.forms.upload_forms import UploadFilesForm
@@ -32,6 +26,8 @@ from tmc_app.forms.metadata_forms import UpdateMetadataForm
 
 load_dotenv(find_dotenv())
 SQLALCHEMY_DATABASE_URI = environ.get("SQLALCHEMY_DATABASE_URI")
+MAPBOX_TOKEN = environ.get("MAPBOX_TOKEN")
+
 
 # Blueprint Configuration
 project_bp = Blueprint(
@@ -239,7 +235,6 @@ def metadata(project_id, file_id):
         uid=project_id
     ).first()
 
-
     this_file = TMCFile.query.filter_by(
         uid=file_id,
         project_id=project_id
@@ -257,7 +252,8 @@ def metadata(project_id, file_id):
         this_file=this_file,
         project=project,
         form=form,
-        latlng=json.dumps(latlng)
+        latlng=json.dumps(latlng),
+        MAPBOX_TOKEN=MAPBOX_TOKEN
     )
 
 
@@ -271,7 +267,6 @@ def update_metadata(project_id, file_id):
     ).first()
 
     form = UpdateMetadataForm()
-
 
     this_file.title = str(form.title.data)
     if form.model_id.data:
