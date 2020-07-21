@@ -7,7 +7,7 @@ import dash_core_components as dcc
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
-from flask_caching import Cache
+# from flask_caching import Cache
 from datetime import time, datetime
 from dotenv import load_dotenv, find_dotenv
 import sqlalchemy
