@@ -97,6 +97,14 @@ class User(UserMixin, db.Model):
     def num_projects_created(self):
         return len(self.projects_created())
 
+    def files_created(self):
+        return TMCFile.query.filter_by(
+            uploaded_by=self.id
+        ).all()
+
+    def num_files_created(self):
+        return len(self.files_created())
+
 
 class Project(db.Model):
 
@@ -356,6 +364,12 @@ class TMCFile(db.Model):
             "start_time": start_time,
             "end_time": end_time,
         }
+
+    def metadata_style(self):
+        if self.lat:
+            return "currentColor"
+        else:
+            return "gray"
 
 
 class OutputFile(db.Model):
