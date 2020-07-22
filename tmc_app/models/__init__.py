@@ -237,6 +237,9 @@ class Project(db.Model):
         df = pd.read_sql(q, uri, index_col="time")
         engine.dispose()
 
+        # Replace any None values with nan
+        df.fillna(value=0, inplace=True)
+
         return df
 
 
