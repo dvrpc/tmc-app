@@ -1,6 +1,6 @@
 # tmc-app
 
-``Flask`` front end for the [``tmc_summarizer``](https://github.com/dvrpc/tmc-summarizer)
+`Flask` front end for the [`tmc_summarizer`](https://github.com/dvrpc/tmc-summarizer)
 
 ## Live Demo
 
@@ -19,23 +19,23 @@ Server was set up following [https://www.digitalocean.com/community/tutorials/ho
 Create/activate an environment:
 
 ```bash
-(base) $ conda create --name tmc_env python=3.8
+(base) $ conda create --name tmc_env python=3.9
 (tmc_env) $ conda activate tmc_env
 ```
 
 Install the requirements:
 
 ```bash
-(tmc_env) $ pip install -r requirements.txt
+(tmc_env) $ conda install --file requirements.txt
 ```
 
-Create the ``.env`` file:
+Create the `.env` file:
 
 ```bash
 (tmc_env) $ touch .env
 ```
 
-Open the ``.env`` file and set the ``GMAPS_API_KEY``:
+Open the `.env` file and set the `GMAPS_API_KEY`:
 
 ```bash
 GMAPS_API_KEY=abc123xyz

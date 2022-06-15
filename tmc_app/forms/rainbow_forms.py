@@ -1,10 +1,10 @@
 from flask_wtf import FlaskForm
-from wtforms import SubmitField, TextField, StringField
+from wtforms import SubmitField, StringField
 from wtforms.validators import DataRequired
 
 
 class SaveRainbowForm(FlaskForm):
-    gradient = TextField(
+    gradient = StringField(
         'Gradient',
         validators=[
             DataRequired(),
